@@ -30,7 +30,7 @@
     .btn-secondary{background:#eef2ff;color:#0f172a}
     .btn-danger{background:var(--danger);color:#fff}
     .small{font-size:0.8rem;color:var(--muted);margin-top:8px}
-    .tree-container{max-height:calc(100vh - 160px);overflow:auto;padding:6px}
+    .tree-container{min-height:520px; overflow:auto; padding:6px}
     ul.tree{list-style:none;margin:6px 0;padding-left:14px;border-left:1px dashed #edf2ff}
     li.person{margin:6px 0;padding-left:8px}
     .node{background:#fbfdff;border-radius:8px;padding:8px;border:1px solid #eef6ff;display:inline-block}
@@ -40,15 +40,15 @@
     .flex{display:flex;gap:8px;align-items:center}
     .grow{flex:1}
     footer{padding:10px 18px;font-size:0.82rem;color:var(--muted)}
-    /* Versions panel tweaks */
     #pbd_versions_panel { display: none; margin-top:8px; border-radius:8px; padding:10px; background:#fbfdff; border:1px solid #eef6ff; }
+    /* Cytoscape canvas area */
+    #cy { width:100%; height:520px; border-radius:8px; background:#fff; border:1px solid #e6eef8 }
   </style>
 </head>
 <body>
 <header>
   <div class="brand">
     <div class="logo" aria-hidden="true">
-      <!-- simple globe / dot svg -->
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <circle cx="12" cy="12" r="9" fill="#e6f0ff"/>
         <circle cx="12" cy="12" r="2.2" fill="#0f172a"/>
@@ -85,25 +85,31 @@
       </div>
     </div>
 
-    <label for="speciesInput">Species (optional)</label>
-    <select id="speciesInput">
-      <option value="">— Not specified —</option>
-      <option>Human</option>
-      <option>Dog</option>
-      <option>Cat</option>
-      <option>Cow</option>
-      <option>Horse</option>
-      <option>Bird</option>
-      <option>Other</option>
-    </select>
+    <!-- Advanced toggle and hidden advanced fields -->
+    <div style="margin-top:8px">
+      <a href="#" id="showAdvancedLink" style="font-size:0.9rem;color:#2563eb;text-decoration:none">Show advanced fields</a>
+    </div>
+    <div id="advancedFields" style="display:none; margin-top:8px">
+      <label for="speciesInput">Species (optional)</label>
+      <select id="speciesInput">
+        <option value="">— Not specified —</option>
+        <option>Human</option>
+        <option>Dog</option>
+        <option>Cat</option>
+        <option>Cow</option>
+        <option>Horse</option>
+        <option>Bird</option>
+        <option>Other</option>
+      </select>
 
-    <label for="genderSelect">Gender (optional)</label>
-    <select id="genderSelect">
-      <option value="">— Not specified —</option>
-      <option value="female">Female</option>
-      <option value="male">Male</option>
-      <option value="other">Other / non-binary</option>
-    </select>
+      <label for="genderSelect">Gender (optional)</label>
+      <select id="genderSelect">
+        <option value="">— Not specified —</option>
+        <option value="female">Female</option>
+        <option value="male">Male</option>
+        <option value="other">Other / non-binary</option>
+      </select>
+    </div>
 
     <label for="notesInput">Notes</label>
     <textarea id="notesInput" placeholder="e.g., 'Lives in Gwalior; rescued 2019'"></textarea>
@@ -180,13 +186,18 @@
         <label for="rootSelect">Root entity</label>
         <select id="rootSelect"></select>
       </div>
-      <div>
-        <label>&nbsp;</label>
+      <div style="display:flex;gap:8px;align-items:center">
         <button id="autoRootBtn" class="btn-secondary">Auto root</button>
+        <button id="visualizeBtn" class="btn-secondary">Visualize</button>
       </div>
     </div>
 
     <div class="tree-container card" id="treeContainer" style="margin-top:10px"></div>
+
+    <!-- Cytoscape container (hidden by default) -->
+    <div id="cyContainer" style="display:none;margin-top:12px">
+      <div id="cy"></div>
+    </div>
 
     <details style="margin-top:12px">
       <summary class="muted">Raw data (debug)</summary>
@@ -199,8 +210,9 @@
   Pale Blue Dot — local-first connection mapper • Export JSON to share with others
 </footer>
 
-<!-- PapaParse CDN (for CSV import) -->
+<!-- External libraries: PapaParse (CSV) and Cytoscape (visualization) -->
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
 
 <script>
 /* Data model: people by id, simple schema extended with species */
@@ -232,18 +244,24 @@ function resetAll(){
   nextId = 1;
   saveToStorage();
   refreshAll();
-  // notify PBDLocal of change
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
 /* Helpers */
 function personLabel(p){
   if(!p) return "(unknown)";
-  let label = p.name || "(Unnamed)";
-  const years = [p.birthYear, p.deathYear].filter(Boolean).join("–");
-  if(years) label += " (" + years + ")";
-  if(p.species) label += " • " + p.species;
-  return label;
+  // Prefer name, fallback to email, fallback to phone, then Unnamed
+  const name = (p.name || "").toString().trim();
+  const firstEmail = (p.emails && p.emails.length) ? p.emails[0] : "";
+  const firstPhone = (p.phones && p.phones.length) ? p.phones[0] : "";
+  const primary = name || firstEmail || firstPhone || "(Unnamed)";
+  const hints = [];
+  if (p.birthYear) hints.push(p.birthYear);
+  // Only show non-human species to reduce noise
+  if (p.species && p.species.toLowerCase() !== 'human') hints.push(p.species);
+  if (p.gender) hints.push(p.gender);
+  const hintStr = hints.length ? " • " + hints.join(" • ") : "";
+  return primary + hintStr;
 }
 function getAllSorted(){ return Object.values(people).sort((a,b)=> (a.name||"").localeCompare(b.name||"")); }
 
@@ -317,7 +335,6 @@ function saveFromForm(){
   saveToStorage(); refreshAll();
   document.getElementById("personSelect").value = id;
 
-  // PBDLocal: notify change
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 function deletePerson(){
@@ -331,7 +348,6 @@ function deletePerson(){
   delete people[id];
   saveToStorage(); clearForm(); refreshAll();
 
-  // PBDLocal: notify change
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
@@ -347,7 +363,6 @@ function linkParentChild(){
   if(!child.parents.includes(parentId)) child.parents.push(parentId);
   saveToStorage(); refreshAll();
 
-  // PBDLocal: notify change
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 function unlinkParentChild(){
@@ -359,7 +374,6 @@ function unlinkParentChild(){
   if(child) child.parents = child.parents.filter(x=>x!==parentId);
   saveToStorage(); refreshAll();
 
-  // PBDLocal: notify change
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
@@ -368,14 +382,16 @@ function findRoots(){
   return Object.values(people).filter(p => !p.parents || p.parents.length===0);
 }
 function autoPickRoot(){
-  const roots = findRoots();
-  if(roots.length===0){ alert("No clear root (everyone has parents). Pick manually."); return; }
-  let chosen = roots[0];
-  for(const r of roots){
-    if(!chosen.birthYear && r.birthYear) chosen = r;
-    else if(chosen.birthYear && r.birthYear && Number(r.birthYear) < Number(chosen.birthYear)) chosen = r;
-  }
-  document.getElementById("rootSelect").value = chosen.id; renderTree();
+  const all = Object.values(people);
+  if(all.length === 0){ alert("No contacts yet."); return; }
+  let best = all[0];
+  let bestScore = ((best.parents?.length||0) + (best.children?.length||0));
+  all.forEach(p => {
+    const score = ((p.parents?.length||0) + (p.children?.length||0));
+    if(score > bestScore) { best = p; bestScore = score; }
+  });
+  document.getElementById("rootSelect").value = best.id;
+  renderTree();
 }
 function buildTreeDOM(id, visited = new Set()){
   const p = people[id]; if(!p) return null;
@@ -389,7 +405,7 @@ function buildTreeDOM(id, visited = new Set()){
   const m = document.createElement("div"); m.className = "meta";
   const bits = [];
   if(p.birthYear || p.deathYear) bits.push([p.birthYear,p.deathYear].filter(Boolean).join("–"));
-  if(p.species) bits.push(p.species);
+  if(p.species && p.species.toLowerCase() !== 'human') bits.push(p.species);
   if(p.gender) bits.push(p.gender);
   if(p.parents && p.parents.length) bits.push(p.parents.length + " parent(s)");
   if(p.children && p.children.length) bits.push(p.children.length + " child(ren)");
@@ -400,7 +416,7 @@ function buildTreeDOM(id, visited = new Set()){
   if(p.children && p.children.length){
     const ul = document.createElement("ul"); ul.className="tree";
     p.children.map(cid=>people[cid]).filter(Boolean).sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(child=>{
-      const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(childNode = cnode);
+      const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(cnode);
     });
     li.appendChild(ul);
   }
@@ -430,7 +446,6 @@ function importJSON(){
     people = parsed.people; nextId = parsed.nextId || 1;
     saveToStorage(); refreshAll();
 
-    // PBDLocal: notify change
     if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
   }catch(e){ alert("Invalid JSON"); console.error(e); }
 }
@@ -446,23 +461,29 @@ function init(){
   document.getElementById("unlinkBtn").addEventListener("click", unlinkParentChild);
   document.getElementById("rootSelect").addEventListener("change", renderTree);
   document.getElementById("autoRootBtn").addEventListener("click", autoPickRoot);
+  document.getElementById("visualizeBtn").addEventListener("click", toggleVisualize);
   document.getElementById("exportBtn").addEventListener("click", exportJSON);
   document.getElementById("importBtn").addEventListener("click", importJSON);
   document.getElementById("clearAllBtn").addEventListener("click", resetAll);
+
+  // advanced fields toggle
+  const sa = document.getElementById("showAdvancedLink");
+  if(sa) sa.addEventListener("click", (e)=>{
+    e.preventDefault();
+    const adv = document.getElementById("advancedFields");
+    adv.style.display = adv.style.display === "none" ? "block" : "none";
+    sa.textContent = adv.style.display === "none" ? "Show advanced fields" : "Hide advanced fields";
+  });
+
+  // CSV & visualizer initialization (CSV wiring added below)
 }
 document.addEventListener("DOMContentLoaded", init);
 
 /* ===========================
    PBDLocal: local autosave, undo & versions
-   Integrated into this single-file app
    =========================== */
-
 (function(){
-  const STORAGE_KEYS = {
-    AUTO: "pbd_local_auto",
-    UNDO: "pbd_local_undo",
-    VERSIONS: "pbd_local_versions"
-  };
+  const STORAGE_KEYS = { AUTO: "pbd_local_auto", UNDO: "pbd_local_undo", VERSIONS: "pbd_local_versions" };
   const AUTOSAVE_DEBOUNCE_MS = 1500;
   const UNDO_MAX = 30;
   const VERSIONS_MAX = 50;
@@ -473,15 +494,8 @@ document.addEventListener("DOMContentLoaded", init);
 
   function makeSnapshot() {
     try {
-      return {
-        ts: Date.now(),
-        people: JSON.parse(JSON.stringify(window.people || {})),
-        nextId: window.nextId || 1
-      };
-    } catch (e) {
-      console.error("snapshot failed", e);
-      return null;
-    }
+      return { ts: Date.now(), people: JSON.parse(JSON.stringify(window.people || {})), nextId: window.nextId || 1 };
+    } catch (e) { console.error("snapshot failed", e); return null; }
   }
 
   function pushUndo() {
@@ -512,13 +526,8 @@ document.addEventListener("DOMContentLoaded", init);
     return snap;
   }
 
-  function listVersions() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.VERSIONS) || "[]");
-  }
-
-  function clearVersions() {
-    localStorage.removeItem(STORAGE_KEYS.VERSIONS);
-  }
+  function listVersions() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.VERSIONS) || "[]"); }
+  function clearVersions() { localStorage.removeItem(STORAGE_KEYS.VERSIONS); }
 
   function scheduleAutosave() {
     clearTimeout(autosaveTimer);
@@ -531,10 +540,7 @@ document.addEventListener("DOMContentLoaded", init);
     }, AUTOSAVE_DEBOUNCE_MS);
   }
 
-  function onAppChange_localSave() {
-    try { pushUndo(); } catch(e) { console.warn(e); }
-    scheduleAutosave();
-  }
+  function onAppChange_localSave() { try { pushUndo(); } catch(e) { console.warn(e); } scheduleAutosave(); }
 
   function restoreSnapshot(snap, options = {saveToUndo: true}) {
     if (!snap) return;
@@ -562,11 +568,8 @@ document.addEventListener("DOMContentLoaded", init);
         try { lastAutosaveAt = JSON.parse(raw).ts; } catch(e) { lastAutosaveAt = null; }
       }
     }
-    if (lastAutosaveAt) {
-      el.textContent = "Auto-saved: " + new Date(lastAutosaveAt).toLocaleTimeString();
-    } else {
-      el.textContent = "Auto-saved: —";
-    }
+    if (lastAutosaveAt) el.textContent = "Auto-saved: " + new Date(lastAutosaveAt).toLocaleTimeString();
+    else el.textContent = "Auto-saved: —";
   }
 
   function renderVersionsPanel() {
@@ -574,10 +577,7 @@ document.addEventListener("DOMContentLoaded", init);
     const list = document.getElementById("pbd_versions_list");
     if (!panel || !list) return;
     const vs = listVersions();
-    if (!vs.length) {
-      list.innerHTML = "<div style='color:#6b7280'>No saved versions.</div>";
-      return;
-    }
+    if (!vs.length) { list.innerHTML = "<div style='color:#6b7280'>No saved versions.</div>"; return; }
     list.innerHTML = "";
     vs.forEach((v, idx) => {
       const item = document.createElement("div");
@@ -640,7 +640,6 @@ document.addEventListener("DOMContentLoaded", init);
     });
   }
 
-  /* Hook up UI events */
   document.addEventListener("DOMContentLoaded", () => {
     const undoBtn = document.getElementById("pbd_undo_btn");
     const saveVerBtn = document.getElementById("pbd_save_version_btn");
@@ -671,7 +670,6 @@ document.addEventListener("DOMContentLoaded", init);
     updateSavedIndicator();
   });
 
-  /* Public API */
   window.PBDLocal = {
     onChange: onAppChange_localSave,
     undo: undoLastChange,
@@ -689,10 +687,7 @@ document.addEventListener("DOMContentLoaded", init);
   const importBtn = document.getElementById("importCsvBtn");
   const statusEl = document.getElementById("csvImportStatus");
 
-  function setStatus(msg) {
-    if (statusEl) statusEl.textContent = msg;
-  }
-
+  function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
   function norm(s) { return (s||"").toString().trim().toLowerCase(); }
 
   function pickPhonesAndEmails(row) {
@@ -832,6 +827,62 @@ document.addEventListener("DOMContentLoaded", init);
     });
   }
 })();
+/* End CSV Importer */
+
+/* ===========================
+   Cytoscape Visualizer
+   =========================== */
+let cyInstance = null;
+function buildCytoscapeElements(limitNodes=2000) {
+  const nodes = [];
+  const edges = [];
+  Object.values(people).forEach(p => {
+    const label = (p.name && p.name.trim()) ? p.name : (p.emails && p.emails[0]) || (p.phones && p.phones[0]) || "(Unnamed)";
+    nodes.push({ data: { id: 'p' + p.id, label } });
+    (p.children || []).forEach(childId => {
+      if (people[childId]) edges.push({ data: { id: `e${p.id}_${childId}`, source: 'p' + p.id, target: 'p' + childId } });
+    });
+  });
+  return nodes.concat(edges);
+}
+
+function renderCytoscape() {
+  const cyEl = document.getElementById('cy');
+  if(!cyEl) return;
+  const elements = buildCytoscapeElements();
+  if (cyInstance) { cyInstance.destroy(); cyInstance = null; }
+  cyInstance = cytoscape({
+    container: cyEl,
+    elements,
+    style: [
+      { selector: 'node', style: { 'label': 'data(label)', 'text-valign': 'center', 'text-wrap': 'wrap', 'width': 'label', 'padding': '6px', 'background-color': '#e6f0ff', 'border-color':'#2563eb', 'border-width':1 } },
+      { selector: 'edge', style: { 'width': 2, 'line-color': '#cfe0ff', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#cfe0ff', 'curve-style': 'bezier' } }
+    ],
+    layout: { name: 'breadthfirst', directed: true, padding: 10, spacingFactor: 1.2 },
+    wheelSensitivity: 0.2
+  });
+  cyInstance.on('tap', 'node', (evt) => {
+    const id = evt.target.id().slice(1);
+    const p = people[id];
+    if (!p) return;
+    const info = `${p.name || '(Unnamed)'}\n${(p.emails && p.emails[0]) || ''}\n${(p.phones && p.phones[0]) || ''}\n${p.notes || ''}`;
+    // small non-blocking panel: replace with nicer UI later
+    alert(info);
+  });
+}
+
+function toggleVisualize() {
+  const panel = document.getElementById('cyContainer');
+  const tree = document.getElementById('treeContainer');
+  if (panel.style.display === 'none' || panel.style.display === '') {
+    panel.style.display = 'block';
+    tree.style.display = 'none';
+    renderCytoscape();
+  } else {
+    panel.style.display = 'none';
+    tree.style.display = 'block';
+  }
+}
 </script>
 </body>
 </html>
