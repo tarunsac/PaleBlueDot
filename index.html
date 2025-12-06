@@ -6,25 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="A simple way to visualize relationships among all beings on our pale blue dot." />
   <style>
-    :root{
-      --bg:#f6f7fb; --card:#ffffff; --muted:#6b7280; --accent:#2563eb; --danger:#dc2626;
-    }
+    :root{ --bg:#f6f7fb; --card:#ffffff; --muted:#6b7280; --accent:#2563eb; --danger:#dc2626; }
     *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
     body{margin:0;background:var(--bg);color:#0f172a;line-height:1.35}
     header{background:linear-gradient(90deg,#0f172a,#111827);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
     .brand{display:flex;gap:14px;align-items:center}
     .logo{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e6f0ff;border:1px solid rgba(255,255,255,0.06)}
-    .logo svg{width:30px;height:30px}
     header h1{margin:0;font-size:1.05rem}
     header p{margin:0;font-size:0.82rem;opacity:0.9}
     main{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:18px;min-height:calc(100vh - 72px)}
     @media(max-width:980px){main{grid-template-columns:1fr;padding:12px}}
     .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 8px 20px rgba(15,23,42,0.06);border:1px solid #e6eef8}
-    .muted{color:var(--muted);font-size:0.86rem}
     label{display:block;font-size:0.78rem;color:var(--muted);margin-top:8px}
     input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef8;font-size:0.9rem;margin-top:5px}
-    textarea{min-height:64px;resize:vertical}
-    .row{display:flex;gap:8px}
     button{border:0;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
     .btn-primary{background:var(--accent);color:#fff}
     .btn-secondary{background:#eef2ff;color:#0f172a}
@@ -32,23 +26,15 @@
     .small{font-size:0.8rem;color:var(--muted);margin-top:8px}
     .tree-container{min-height:420px; overflow:auto; padding:6px}
     ul.tree{list-style:none;margin:6px 0;padding-left:14px;border-left:1px dashed #edf2ff}
-    li.person{margin:6px 0;padding-left:8px}
     .node{background:#fbfdff;border-radius:8px;padding:8px;border:1px solid #eef6ff;display:inline-block}
     .name{font-weight:700}
     .meta{font-size:0.78rem;color:var(--muted)}
     pre.debug{background:#0b1220;color:#e6eef8;padding:10px;border-radius:8px;max-height:160px;overflow:auto}
-    .flex{display:flex;gap:8px;align-items:center}
-    .grow{flex:1}
-    footer{padding:10px 18px;font-size:0.82rem;color:var(--muted)}
-    #pbd_versions_panel { display: none; margin-top:8px; border-radius:8px; padding:10px; background:#fbfdff; border:1px solid #eef6ff; }
-    /* Cytoscape canvas area */
-    #cy { width:100%; height:520px; border-radius:8px; background:#fff; border:1px solid #e6eef8 }
-    /* small helper UI */
     .muted-link{color:#2563eb;cursor:pointer;text-decoration:none}
     .log-panel{max-height:160px;overflow:auto;background:#0b1220;color:#e6eef8;padding:8px;border-radius:8px;font-family:monospace;font-size:0.85rem}
     table.preview{width:100%;border-collapse:collapse}
     table.preview th, table.preview td{border:1px solid #eef6ff;padding:6px;text-align:left;font-size:0.85rem}
-    .cluster-badge{display:inline-block;padding:3px 6px;border-radius:8px;background:#eef2ff;color:#0f172a;font-size:0.78rem;margin-right:6px}
+    #cy { width:100%; height:520px; border-radius:8px; background:#fff; border:1px solid #e6eef8 }
   </style>
 </head>
 <body>
@@ -93,7 +79,6 @@
       </div>
     </div>
 
-    <!-- Advanced toggle and hidden advanced fields -->
     <div style="margin-top:8px">
       <a href="#" id="showAdvancedLink" class="muted-link">Show advanced fields</a>
     </div>
@@ -101,21 +86,13 @@
       <label for="speciesInput">Species (optional)</label>
       <select id="speciesInput">
         <option value="">— Not specified —</option>
-        <option>Human</option>
-        <option>Dog</option>
-        <option>Cat</option>
-        <option>Cow</option>
-        <option>Horse</option>
-        <option>Bird</option>
-        <option>Other</option>
+        <option>Human</option><option>Dog</option><option>Cat</option><option>Cow</option><option>Horse</option><option>Bird</option><option>Other</option>
       </select>
 
       <label for="genderSelect">Gender (optional)</label>
       <select id="genderSelect">
         <option value="">— Not specified —</option>
-        <option value="female">Female</option>
-        <option value="male">Male</option>
-        <option value="other">Other / non-binary</option>
+        <option value="female">Female</option><option value="male">Male</option><option value="other">Other / non-binary</option>
       </select>
     </div>
 
@@ -139,8 +116,6 @@
       <button id="linkBtn" class="btn-primary">Link parent → child</button>
       <button id="unlinkBtn" class="btn-secondary">Unlink (parent → child)</button>
     </div>
-
-    <div class="small">Graph model: directed parent → child edges. Spouse or other relations can be added later.</div>
 
     <hr style="margin:12px 0" />
 
@@ -199,7 +174,6 @@
       <div style="margin-top:8px" class="log-panel" id="importLog"></div>
     </div>
 
-    <!-- PBDLocal UI: autosave / undo / versions -->
     <div id="pbd_local_controls" style="margin-top:12px;">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button id="pbd_undo_btn" class="btn-secondary" title="Undo last change">Undo</button>
@@ -209,7 +183,6 @@
         <div id="pbd_saved_indicator" style="margin-left:auto;font-size:0.85rem;color:#4b5563">Auto-saved: —</div>
       </div>
 
-      <!-- Versions dialog (hidden by default) -->
       <div id="pbd_versions_panel">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>Saved versions</strong>
@@ -240,7 +213,6 @@
 
     <div class="tree-container card" id="treeContainer" style="margin-top:10px"></div>
 
-    <!-- Cytoscape container (hidden by default) -->
     <div id="cyContainer" style="display:none;margin-top:12px">
       <div id="cy"></div>
     </div>
@@ -256,24 +228,20 @@
   Pale Blue Dot — local-first connection mapper • Export JSON to share with others
 </footer>
 
-<!-- External libraries: PapaParse (CSV) and Cytoscape (visualization) -->
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
 
 <script>
-/* ===========================
+/* ===========
    App state & persistence
-   =========================== */
+   =========== */
 let people = {};
 let nextId = 1;
 const STORAGE_KEY = "pale_blue_dot_v1";
-
-// Import logs (in-memory, downloadable)
 const importLogs = [];
 function log(msg, level="info"){ const ts = new Date().toISOString(); importLogs.push({ts,level,msg}); renderLog(); console.log(`[PBD] ${ts} ${level}: ${msg}`); }
 function renderLog(){ const el = document.getElementById("importLog"); if(!el) return; el.innerHTML = importLogs.map(x=>`${x.ts} ${x.level.toUpperCase()}: ${escapeHtml(x.msg)}`).join("\n"); }
 function downloadLog(){ const blob = new Blob([JSON.stringify(importLogs,null,2)],{type:"application/json"}); const url = URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="pbd-import-log.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-
 function escapeHtml(s){ return (s||"").toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function loadFromStorage(){
@@ -288,23 +256,11 @@ function loadFromStorage(){
     }
   }catch(e){ console.error(e); log("Failed to load from storage: "+e.message, "error") }
 }
-function saveToStorage(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({people, nextId}));
-    refreshDebug();
-    log("Saved data to localStorage", "info");
-  }catch(e){ console.error(e); log("Failed to save to storage: "+e.message, "error") }
-}
-function resetAll(){
-  if(!confirm("Delete all data?")) return;
-  people = {}; nextId = 1; saveToStorage(); refreshAll();
-  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-}
+function saveToStorage(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({people, nextId})); refreshDebug(); log("Saved data to localStorage","info"); }catch(e){ console.error(e); log("Failed to save to storage: "+e.message,"error"); } }
 
-/* Helpers */
+/* Helpers & labels */
 function personLabel(p){
   if(!p) return "(unknown)";
-  // Prefer name, fallback to email, fallback to phone, then Unnamed
   const name = (p.name || "").toString().trim();
   const firstEmail = (p.emails && p.emails.length) ? p.emails[0] : "";
   const firstPhone = (p.phones && p.phones.length) ? p.phones[0] : "";
@@ -313,12 +269,11 @@ function personLabel(p){
   if (p.birthYear) hints.push(p.birthYear);
   if (p.species && p.species.toLowerCase() !== 'human') hints.push(p.species);
   if (p.gender) hints.push(p.gender);
-  // Add cluster hint if present
   if (p._cluster) hints.push(p._cluster);
   const hintStr = hints.length ? " • " + hints.join(" • ") : "";
   return primary + hintStr;
 }
-function getAllSorted(){ return Object.values(people).sort((a,b)=> ( (a.name||"") .localeCompare(b.name||"") )); }
+function getAllSorted(){ return Object.values(people).sort((a,b)=> (a.name||"").localeCompare(b.name||"")); }
 
 /* UI population */
 function refreshSelects(){
@@ -328,10 +283,7 @@ function refreshSelects(){
   const rootSelect = document.getElementById("rootSelect");
   [personSelect,parentSelect,childSelect,rootSelect].forEach(s => { if(s) s.innerHTML=""; });
 
-  if(personSelect){
-    const opt = document.createElement("option"); opt.value = ""; opt.textContent = "— New entity —";
-    personSelect.appendChild(opt);
-  }
+  if(personSelect){ const opt = document.createElement("option"); opt.value = ""; opt.textContent = "— New entity —"; personSelect.appendChild(opt); }
 
   const arr = getAllSorted();
   arr.forEach(p => {
@@ -350,25 +302,9 @@ function refreshSelects(){
 function refreshDebug(){ document.getElementById("debugDump").textContent = JSON.stringify(people, null, 2); }
 function refreshAll(){ refreshSelects(); renderTree(); refreshDebug(); }
 
-/* CRUD */
-function clearForm(){
-  document.getElementById("personSelect").value = "";
-  document.getElementById("nameInput").value = "";
-  document.getElementById("birthInput").value = "";
-  document.getElementById("deathInput").value = "";
-  document.getElementById("genderSelect").value = "";
-  document.getElementById("speciesInput").value = "";
-  document.getElementById("notesInput").value = "";
-}
-function loadForm(id){
-  const p = people[id]; if(!p) return;
-  document.getElementById("nameInput").value = p.name||"";
-  document.getElementById("birthInput").value = p.birthYear||"";
-  document.getElementById("deathInput").value = p.deathYear||"";
-  document.getElementById("genderSelect").value = p.gender||"";
-  document.getElementById("speciesInput").value = p.species||"";
-  document.getElementById("notesInput").value = p.notes||"";
-}
+/* CRUD + relationships (unchanged logic) */
+function clearForm(){ document.getElementById("personSelect").value = ""; document.getElementById("nameInput").value = ""; document.getElementById("birthInput").value = ""; document.getElementById("deathInput").value = ""; document.getElementById("genderSelect").value = ""; document.getElementById("speciesInput").value = ""; document.getElementById("notesInput").value = ""; }
+function loadForm(id){ const p = people[id]; if(!p) return; document.getElementById("nameInput").value = p.name||""; document.getElementById("birthInput").value = p.birthYear||""; document.getElementById("deathInput").value = p.deathYear||""; document.getElementById("genderSelect").value = p.gender||""; document.getElementById("speciesInput").value = p.species||""; document.getElementById("notesInput").value = p.notes||""; }
 function saveFromForm(){
   const selectedId = document.getElementById("personSelect").value;
   const name = document.getElementById("nameInput").value.trim();
@@ -377,134 +313,39 @@ function saveFromForm(){
   const gender = document.getElementById("genderSelect").value;
   const species = document.getElementById("speciesInput").value;
   const notes = document.getElementById("notesInput").value.trim();
-
   if(!name){ alert("Name is required."); return; }
-
   let id = selectedId || String(nextId++);
-  if(!people[id]){
-    people[id] = { id, name, birthYear: birthYear||"", deathYear: deathYear||"", gender: gender||"", species: species||"", notes, phones: [], emails: [], parents: [], children: [] };
-  } else {
-    const p = people[id];
-    p.name = name; p.birthYear = birthYear||""; p.deathYear = deathYear||"";
-    p.gender = gender||""; p.species = species||""; p.notes = notes;
-  }
-  saveToStorage(); refreshAll();
-  document.getElementById("personSelect").value = id;
+  if(!people[id]){ people[id] = { id, name, birthYear: birthYear||"", deathYear: deathYear||"", gender: gender||"", species: species||"", notes, phones: [], emails: [], parents: [], children: [] }; }
+  else { const p = people[id]; p.name = name; p.birthYear = birthYear||""; p.deathYear = deathYear||""; p.gender = gender||""; p.species = species||""; p.notes = notes; }
+  saveToStorage(); refreshAll(); document.getElementById("personSelect").value = id;
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 function deletePerson(){
-  const id = document.getElementById("personSelect").value;
-  if(!id){ alert("Select an entity to delete."); return; }
-  if(!confirm("Delete and remove references?")) return;
-  Object.values(people).forEach(o=>{
-    o.parents = o.parents.filter(pid => pid !== id);
-    o.children = o.children.filter(cid => cid !== id);
-  });
-  delete people[id];
-  saveToStorage(); clearForm(); refreshAll();
+  const id = document.getElementById("personSelect").value; if(!id){ alert("Select an entity to delete."); return; } if(!confirm("Delete and remove references?")) return;
+  Object.values(people).forEach(o=>{ o.parents = o.parents.filter(pid => pid !== id); o.children = o.children.filter(cid => cid !== id); });
+  delete people[id]; saveToStorage(); clearForm(); refreshAll();
   if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
-/* Relationships */
-function linkParentChild(){
-  const parentId = document.getElementById("parentSelect").value;
-  const childId = document.getElementById("childSelect").value;
-  if(!parentId || !childId){ alert("Select both parent and child."); return; }
-  if(parentId === childId){ alert("Cannot link entity to itself."); return; }
-  const parent = people[parentId], child = people[childId];
-  if(!parent || !child) return;
-  if(!parent.children.includes(childId)) parent.children.push(childId);
-  if(!child.parents.includes(parentId)) child.parents.push(parentId);
-  saveToStorage(); refreshAll();
-  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-}
-function unlinkParentChild(){
-  const parentId = document.getElementById("parentSelect").value;
-  const childId = document.getElementById("childSelect").value;
-  if(!parentId || !childId){ alert("Select both parent and child."); return; }
-  const parent = people[parentId], child = people[childId];
-  if(parent) parent.children = parent.children.filter(x=>x!==childId);
-  if(child) child.parents = child.parents.filter(x=>x!==parentId);
-  saveToStorage(); refreshAll();
-  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-}
+function linkParentChild(){ const parentId = document.getElementById("parentSelect").value; const childId = document.getElementById("childSelect").value; if(!parentId || !childId){ alert("Select both parent and child."); return; } if(parentId === childId){ alert("Cannot link entity to itself."); return; } const parent = people[parentId], child = people[childId]; if(!parent || !child) return; if(!parent.children.includes(childId)) parent.children.push(childId); if(!child.parents.includes(parentId)) child.parents.push(parentId); saveToStorage(); refreshAll(); if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange(); }
+function unlinkParentChild(){ const parentId = document.getElementById("parentSelect").value; const childId = document.getElementById("childSelect").value; if(!parentId || !childId){ alert("Select both parent and child."); return; } const parent = people[parentId], child = people[childId]; if(parent) parent.children = parent.children.filter(x=>x!==childId); if(child) child.parents = child.parents.filter(x=>x!==parentId); saveToStorage(); refreshAll(); if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange(); }
 
 /* Tree rendering */
-function findRoots(){
-  return Object.values(people).filter(p => !p.parents || p.parents.length===0);
-}
-function autoPickRoot(){
-  const all = Object.values(people);
-  if(all.length === 0){ alert("No contacts yet."); return; }
-  let best = all[0];
-  let bestScore = ((best.parents?.length||0) + (best.children?.length||0));
-  all.forEach(p => {
-    const score = ((p.parents?.length||0) + (p.children?.length||0));
-    if(score > bestScore) { best = p; bestScore = score; }
-  });
-  document.getElementById("rootSelect").value = best.id;
-  renderTree();
-}
-function buildTreeDOM(id, visited = new Set()){
-  const p = people[id]; if(!p) return null;
-  const li = document.createElement("li"); li.className = "person";
-  if(visited.has(id)){
-    const node = document.createElement("div"); node.className = "node"; node.innerHTML = `<div class="name">${p.name}</div><div class="meta">cycle</div>`; li.appendChild(node); return li;
-  }
-  visited.add(id);
-  const node = document.createElement("div"); node.className = "node";
-  const nm = document.createElement("div"); nm.className = "name"; nm.textContent = p.name; node.appendChild(nm);
-  const m = document.createElement("div"); m.className = "meta";
-  const bits = [];
-  if(p.birthYear || p.deathYear) bits.push([p.birthYear,p.deathYear].filter(Boolean).join("–"));
-  if(p.species && p.species.toLowerCase() !== 'human') bits.push(p.species);
-  if(p.gender) bits.push(p.gender);
-  if(p._cluster) bits.push(p._cluster);
-  if(p.parents && p.parents.length) bits.push(p.parents.length + " parent(s)");
-  if(p.children && p.children.length) bits.push(p.children.length + " child(ren)");
-  m.textContent = bits.join(" • ");
-  node.appendChild(m);
-  if(p.notes){ const notes = document.createElement("div"); notes.className="meta"; notes.textContent=p.notes; node.appendChild(notes); }
-  li.appendChild(node);
-  if(p.children && p.children.length){
-    const ul = document.createElement("ul"); ul.className="tree";
-    p.children.map(cid=>people[cid]).filter(Boolean).sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(child=>{
-      const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(cnode);
-    });
-    li.appendChild(ul);
-  }
-  return li;
-}
-function renderTree(){
-  const container = document.getElementById("treeContainer");
-  container.innerHTML="";
-  const rootId = document.getElementById("rootSelect").value;
-  if(!rootId){ container.innerHTML='<div class="small">Select a root to view descendants.</div>'; return; }
-  if(!people[rootId]){ container.innerHTML='<div class="small">Root not found.</div>'; return; }
-  const ul = document.createElement("ul"); ul.className="tree";
-  const li = buildTreeDOM(rootId);
-  if(li) ul.appendChild(li);
-  container.appendChild(ul);
-}
+function findRoots(){ return Object.values(people).filter(p => !p.parents || p.parents.length===0); }
+function autoPickRoot(){ const all = Object.values(people); if(all.length === 0){ alert("No contacts yet."); return; } let best = all[0]; let bestScore = ((best.parents?.length||0) + (best.children?.length||0)); all.forEach(p => { const score = ((p.parents?.length||0) + (p.children?.length||0)); if(score > bestScore) { best = p; bestScore = score; } }); document.getElementById("rootSelect").value = best.id; renderTree(); }
+function buildTreeDOM(id, visited = new Set()){ const p = people[id]; if(!p) return null; const li = document.createElement("li"); li.className = "person"; if(visited.has(id)){ const node = document.createElement("div"); node.className = "node"; node.innerHTML = `<div class="name">${p.name}</div><div class="meta">cycle</div>`; li.appendChild(node); return li; } visited.add(id); const node = document.createElement("div"); node.className = "node"; const nm = document.createElement("div"); nm.className = "name"; nm.textContent = p.name; node.appendChild(nm); const m = document.createElement("div"); m.className = "meta"; const bits = []; if(p.birthYear || p.deathYear) bits.push([p.birthYear,p.deathYear].filter(Boolean).join("–")); if(p.species && p.species.toLowerCase() !== 'human') bits.push(p.species); if(p.gender) bits.push(p.gender); if(p._cluster) bits.push(p._cluster); if(p.parents && p.parents.length) bits.push(p.parents.length + " parent(s)"); if(p.children && p.children.length) bits.push(p.children.length + " child(ren)"); m.textContent = bits.join(" • "); node.appendChild(m); if(p.notes){ const notes = document.createElement("div"); notes.className="meta"; notes.textContent=p.notes; node.appendChild(notes); } li.appendChild(node); if(p.children && p.children.length){ const ul = document.createElement("ul"); ul.className="tree"; p.children.map(cid=>people[cid]).filter(Boolean).sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(child=>{ const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(cnode); }); li.appendChild(ul); } return li; }
+function renderTree(){ const container = document.getElementById("treeContainer"); container.innerHTML=""; const rootId = document.getElementById("rootSelect").value; if(!rootId){ container.innerHTML='<div class="small">Select a root to view descendants.</div>'; return; } if(!people[rootId]){ container.innerHTML='<div class="small">Root not found.</div>'; return; } const ul = document.createElement("ul"); ul.className="tree"; const li = buildTreeDOM(rootId); if(li) ul.appendChild(li); container.appendChild(ul); }
 
-/* Export / Import JSON */
+/* Export/Import JSON */
 function exportJSON(){ document.getElementById("jsonArea").value = JSON.stringify({people, nextId}, null, 2); }
-function importJSON(){
-  const text = document.getElementById("jsonArea").value.trim();
-  if(!text){ alert("Paste JSON before importing."); return; }
-  try{
-    const parsed = JSON.parse(text);
-    if(!parsed.people){ alert("JSON missing 'people'"); return; }
-    if(!confirm("Import will overwrite local data. Continue?")) return;
-    people = parsed.people; nextId = parsed.nextId || 1;
-    saveToStorage(); refreshAll();
-    if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-  }catch(e){ alert("Invalid JSON"); console.error(e); log("Invalid JSON import: "+e.message,"error"); }
-}
+function importJSON(){ const text = document.getElementById("jsonArea").value.trim(); if(!text){ alert("Paste JSON before importing."); return; } try{ const parsed = JSON.parse(text); if(!parsed.people){ alert("JSON missing 'people'"); return; } if(!confirm("Import will overwrite local data. Continue?")) return; people = parsed.people; nextId = parsed.nextId || 1; saveToStorage(); refreshAll(); if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange(); }catch(e){ alert("Invalid JSON"); console.error(e); log("Invalid JSON import: "+e.message,"error"); } }
 
-/* Wiring */
-function init(){
-  loadFromStorage(); refreshAll();
+/* Init wiring (minimal) */
+function appInit(){
+  loadFromStorage();
+  refreshAll();
+
+  // Basic UI bindings
   document.getElementById("personSelect").addEventListener("change",(e)=>{ const v=e.target.value; if(!v) clearForm(); else loadForm(v); });
   document.getElementById("savePersonBtn").addEventListener("click", saveFromForm);
   document.getElementById("resetFormBtn").addEventListener("click", clearForm);
@@ -517,239 +358,52 @@ function init(){
   document.getElementById("exportBtn").addEventListener("click", exportJSON);
   document.getElementById("importBtn").addEventListener("click", importJSON);
   document.getElementById("clearAllBtn").addEventListener("click", resetAll);
-  document.getElementById("previewCsvBtn").addEventListener("click", previewCsv);
-  document.getElementById("importCsvBtn").addEventListener("click", doImportCsv);
-  document.getElementById("downloadLogBtn").addEventListener("click", downloadLog);
-  document.getElementById("aboutLink").addEventListener("click", showAbout);
 
   // advanced fields toggle
   const sa = document.getElementById("showAdvancedLink");
   if(sa) sa.addEventListener("click", (e)=>{
-    e.preventDefault();
-    const adv = document.getElementById("advancedFields");
+    e.preventDefault(); const adv = document.getElementById("advancedFields");
     adv.style.display = adv.style.display === "none" ? "block" : "none";
     sa.textContent = adv.style.display === "none" ? "Show advanced fields" : "Hide advanced fields";
   });
+
+  // versions + pbd local hooks
+  document.getElementById("pbd_undo_btn").addEventListener("click", ()=>{ try{ const stack = JSON.parse(localStorage.getItem("pbd_local_undo")||"[]"); if(!stack.length){ alert("Nothing to undo"); return;} const snap = stack.pop(); localStorage.setItem("pbd_local_undo", JSON.stringify(stack)); if(snap){ window.people = snap.people||{}; window.nextId = snap.nextId||1; refreshAll(); } }catch(e){console.error(e)} });
+  document.getElementById("pbd_save_version_btn").addEventListener("click", ()=>{ const name = prompt("Enter a name for this version (optional):", new Date().toLocaleString()); if(name===null) return; try{ const versions = JSON.parse(localStorage.getItem("pbd_local_versions")||"[]"); const snap = { ts: Date.now(), people: JSON.parse(JSON.stringify(window.people||{})), nextId: window.nextId||1, name: name||new Date().toLocaleString() }; versions.unshift(snap); localStorage.setItem("pbd_local_versions", JSON.stringify(versions)); alert("Version saved."); }catch(e){console.error(e)} });
+  document.getElementById("pbd_show_versions_btn").addEventListener("click", ()=>{ const panel = document.getElementById("pbd_versions_panel"); panel.style.display = panel.style.display === "none" ? "block" : "none"; renderVersionsPanel(); });
+  document.getElementById("pbd_clear_versions_btn").addEventListener("click", ()=>{ if(!confirm("Delete all saved versions?")) return; localStorage.removeItem("pbd_local_versions"); renderVersionsPanel(); });
+  document.getElementById("pbd_close_versions").addEventListener("click", ()=>{ document.getElementById("pbd_versions_panel").style.display="none"; });
+
+  // about link
+  document.getElementById("aboutLink").addEventListener("click", showAbout);
+  // download log
+  document.getElementById("downloadLogBtn").addEventListener("click", downloadLog);
 }
-document.addEventListener("DOMContentLoaded", init);
 
-/* ===========================
-   PBDLocal (unchanged, but kept)
-   =========================== */
-/* ... keep the same PBDLocal implementation as previous versions ... */
-// For brevity in this message I reuse the exact PBDLocal code from prior version — it is unchanged.
-// (In the actual file this block is included verbatim to keep autosave/undo/versioning working.)
-(function(){
-  const STORAGE_KEYS = { AUTO: "pbd_local_auto", UNDO: "pbd_local_undo", VERSIONS: "pbd_local_versions" };
-  const AUTOSAVE_DEBOUNCE_MS = 1500;
-  const UNDO_MAX = 30;
-  const VERSIONS_MAX = 50;
-  const REFRESH_FN = window.refreshAll || (() => { console.warn("No refresh function found."); });
-
-  let autosaveTimer = null;
-  let lastAutosaveAt = null;
-
-  function makeSnapshot() {
-    try {
-      return { ts: Date.now(), people: JSON.parse(JSON.stringify(window.people || {})), nextId: window.nextId || 1 };
-    } catch (e) { console.error("snapshot failed", e); return null; }
-  }
-
-  function pushUndo() {
-    const stack = JSON.parse(localStorage.getItem(STORAGE_KEYS.UNDO) || "[]");
-    const snap = makeSnapshot();
-    if (!snap) return;
-    stack.push(snap);
-    while (stack.length > UNDO_MAX) stack.shift();
-    localStorage.setItem(STORAGE_KEYS.UNDO, JSON.stringify(stack));
-  }
-
-  function popUndo() {
-    const stack = JSON.parse(localStorage.getItem(STORAGE_KEYS.UNDO) || "[]");
-    if (!stack.length) return null;
-    const snap = stack.pop();
-    localStorage.setItem(STORAGE_KEYS.UNDO, JSON.stringify(stack));
-    return snap;
-  }
-
-  function addVersion(name) {
-    const versions = JSON.parse(localStorage.getItem(STORAGE_KEYS.VERSIONS) || "[]");
-    const snap = makeSnapshot();
-    if (!snap) return;
-    snap.name = name || new Date(snap.ts).toLocaleString();
-    versions.unshift(snap);
-    while (versions.length > VERSIONS_MAX) versions.pop();
-    localStorage.setItem(STORAGE_KEYS.VERSIONS, JSON.stringify(versions));
-    return snap;
-  }
-
-  function listVersions() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.VERSIONS) || "[]"); }
-  function clearVersions() { localStorage.removeItem(STORAGE_KEYS.VERSIONS); }
-
-  function scheduleAutosave() {
-    clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(() => {
-      const snap = makeSnapshot();
-      if (!snap) return;
-      localStorage.setItem(STORAGE_KEYS.AUTO, JSON.stringify(snap));
-      lastAutosaveAt = snap.ts;
-      updateSavedIndicator();
-    }, AUTOSAVE_DEBOUNCE_MS);
-  }
-
-  function onAppChange_localSave() { try { pushUndo(); } catch(e) { console.warn(e); } scheduleAutosave(); }
-
-  function restoreSnapshot(snap, options = {saveToUndo: true}) {
-    if (!snap) return;
-    if (options.saveToUndo) pushUndo();
-    window.people = JSON.parse(JSON.stringify(snap.people || {}));
-    window.nextId = snap.nextId || 1;
-    localStorage.setItem(STORAGE_KEYS.AUTO, JSON.stringify(snap));
-    lastAutosaveAt = snap.ts;
-    REFRESH_FN();
-    updateSavedIndicator();
-  }
-
-  function undoLastChange() {
-    const snap = popUndo();
-    if (!snap) { alert("Nothing to undo"); return; }
-    restoreSnapshot(snap, {saveToUndo: false});
-  }
-
-  function updateSavedIndicator() {
-    const el = document.getElementById("pbd_saved_indicator");
-    if (!el) return;
-    if (!lastAutosaveAt) {
-      const raw = localStorage.getItem(STORAGE_KEYS.AUTO);
-      if (raw) {
-        try { lastAutosaveAt = JSON.parse(raw).ts; } catch(e) { lastAutosaveAt = null; }
-      }
-    }
-    if (lastAutosaveAt) el.textContent = "Auto-saved: " + new Date(lastAutosaveAt).toLocaleTimeString();
-    else el.textContent = "Auto-saved: —";
-  }
-
-  function renderVersionsPanel() {
-    const panel = document.getElementById("pbd_versions_panel");
-    const list = document.getElementById("pbd_versions_list");
-    if (!panel || !list) return;
-    const vs = listVersions();
-    if (!vs.length) { list.innerHTML = "<div style='color:#6b7280'>No saved versions.</div>"; return; }
-    list.innerHTML = "";
-    vs.forEach((v, idx) => {
-      const item = document.createElement("div");
-      item.style.padding = "8px";
-      item.style.borderBottom = "1px dashed #eef6ff";
-      item.style.display = "flex";
-      item.style.justifyContent = "space-between";
-      item.style.alignItems = "center";
-
-      const left = document.createElement("div");
-      left.innerHTML = `<div style="font-weight:700">${v.name || new Date(v.ts).toLocaleString()}</div>
-                        <div style="font-size:0.85rem;color:#6b7280">Saved: ${new Date(v.ts).toLocaleString()}</div>`;
-      item.appendChild(left);
-
-      const right = document.createElement("div" );
-      right.style.display = "flex";
-      right.style.gap = "8px";
-
-      const restoreBtn = document.createElement("button");
-      restoreBtn.className = "btn-secondary";
-      restoreBtn.textContent = "Restore";
-      restoreBtn.onclick = () => {
-        if (!confirm("Restore this version? This will overwrite current data.")) return;
-        restoreSnapshot(v, {saveToUndo: true});
-        alert("Restored version: " + (v.name || new Date(v.ts).toLocaleString()));
-      };
-      right.appendChild(restoreBtn);
-
-      const downloadBtn = document.createElement("button");
-      downloadBtn.className = "btn-secondary";
-      downloadBtn.textContent = "Download";
-      downloadBtn.onclick = () => {
-        const data = JSON.stringify(v, null, 2);
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `PaleBlueDot-version-${new Date(v.ts).toISOString()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      };
-      right.appendChild(downloadBtn);
-
-      const delBtn = document.createElement("button");
-      delBtn.className = "btn-danger";
-      delBtn.textContent = "Delete";
-      delBtn.onclick = () => {
-        if (!confirm("Delete this saved version?")) return;
-        const arr = listVersions();
-        arr.splice(idx, 1);
-        localStorage.setItem(STORAGE_KEYS.VERSIONS, JSON.stringify(arr));
-        renderVersionsPanel();
-      };
-      right.appendChild(delBtn);
-
-      item.appendChild(right);
-      list.appendChild(item);
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const undoBtn = document.getElementById("pbd_undo_btn");
-    const saveVerBtn = document.getElementById("pbd_save_version_btn");
-    const showVerBtn = document.getElementById("pbd_show_versions_btn");
-    const closeVerBtn = document.getElementById("pbd_close_versions");
-    const versionsPanel = document.getElementById("pbd_versions_panel");
-    const clearVerBtn = document.getElementById("pbd_clear_versions_btn");
-
-    if (undoBtn) undoBtn.addEventListener("click", () => {
-      const stack = JSON.parse(localStorage.getItem(STORAGE_KEYS.UNDO)||"[]");
-      if (!stack.length) { alert('Nothing to undo'); return; }
-      const snap = stack.pop();
-      localStorage.setItem(STORAGE_KEYS.UNDO, JSON.stringify(stack));
-      if (snap) {
-        window.people = snap.people || {};
-        window.nextId = snap.nextId || 1;
-        (window.refreshAll || (()=>{}))();
-      }
-    });
-    if (saveVerBtn) saveVerBtn.addEventListener("click", () => {
-      const name = prompt("Enter a name for this version (optional):", new Date().toLocaleString());
-      if (name === null) return;
-      addVersion(name || undefined);
-      renderVersionsPanel();
-      alert("Version saved.");
-    });
-    if (showVerBtn) showVerBtn.addEventListener("click", () => {
-      if (versionsPanel) versionsPanel.style.display = versionsPanel.style.display === "none" ? "block" : "none";
-      renderVersionsPanel();
-    });
-    if (closeVerBtn) closeVerBtn.addEventListener("click", () => { if (versionsPanel) versionsPanel.style.display = "none"; });
-    if (clearVerBtn) clearVerBtn.addEventListener("click", () => {
-      if (!confirm("Delete all saved versions?")) return;
-      clearVersions();
-      renderVersionsPanel();
-    });
-
-    updateSavedIndicator();
+/* render versions panel helper */
+function renderVersionsPanel(){
+  const panel = document.getElementById("pbd_versions_panel");
+  const list = document.getElementById("pbd_versions_list");
+  if(!panel || !list) return;
+  const vs = JSON.parse(localStorage.getItem("pbd_local_versions")||"[]");
+  if(!vs.length){ list.innerHTML = "<div style='color:#6b7280'>No saved versions.</div>"; return; }
+  list.innerHTML = "";
+  vs.forEach((v, idx)=> {
+    const item = document.createElement("div"); item.style.padding="8px"; item.style.borderBottom="1px dashed #eef6ff"; item.style.display="flex"; item.style.justifyContent="space-between"; item.style.alignItems="center";
+    const left = document.createElement("div"); left.innerHTML = `<div style="font-weight:700">${v.name}</div><div style="font-size:0.85rem;color:#6b7280">Saved: ${new Date(v.ts).toLocaleString()}</div>`;
+    item.appendChild(left);
+    const right = document.createElement("div"); right.style.display="flex"; right.style.gap="8px";
+    const restoreBtn = document.createElement("button"); restoreBtn.className="btn-secondary"; restoreBtn.textContent="Restore"; restoreBtn.onclick = ()=>{ if(!confirm("Restore this version? This will overwrite current data.")) return; window.people = v.people||{}; window.nextId = v.nextId||1; refreshAll(); };
+    right.appendChild(restoreBtn);
+    const downloadBtn = document.createElement("button"); downloadBtn.className="btn-secondary"; downloadBtn.textContent="Download"; downloadBtn.onclick = ()=>{ const data = JSON.stringify(v,null,2); const blob = new Blob([data],{type:"application/json"}); const url = URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`pbd-version-${new Date(v.ts).toISOString()}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); };
+    right.appendChild(downloadBtn);
+    const delBtn = document.createElement("button"); delBtn.className="btn-danger"; delBtn.textContent="Delete"; delBtn.onclick = ()=>{ if(!confirm("Delete this saved version?")) return; vs.splice(idx,1); localStorage.setItem("pbd_local_versions", JSON.stringify(vs)); renderVersionsPanel(); };
+    right.appendChild(delBtn);
+    item.appendChild(right); list.appendChild(item);
   });
+}
 
-  window.PBDLocal = {
-    onChange: function(){ try{ const stack = JSON.parse(localStorage.getItem(STORAGE_KEYS.UNDO) || "[]"); stack.push({ts:Date.now(), people: JSON.parse(JSON.stringify(window.people||{})), nextId: window.nextId||1}); while(stack.length>UNDO_MAX) stack.shift(); localStorage.setItem(STORAGE_KEYS.UNDO, JSON.stringify(stack)); }catch(e){} scheduleAutosave(); },
-    undo: ()=>{},
-    saveVersion: (name) => { addVersion(name); renderVersionsPanel(); },
-    listVersions: listVersions
-  };
-})();
-/* End PBDLocal */
-
-/* ===========================
-   CSV preview, mapping & import (with relation linking & cluster rules)
-   =========================== */
-
+/* CSV preview/import module (self-contained) */
 (function(){
   const fileInput = document.getElementById("csvFileInput");
   const previewBtn = document.getElementById("previewCsvBtn");
@@ -769,7 +423,6 @@ document.addEventListener("DOMContentLoaded", init);
   function setStatus(s){ if(statusEl) statusEl.textContent = s; log(s,"info"); }
   function readFileHead(file, callback){
     if(!file) return callback(new Error("No file"));
-    // Papa parse a small sample (first 50 rows)
     Papa.parse(file, { header:true, preview:50, skipEmptyLines:true, worker:true,
       complete: function(results){ callback(null, results); },
       error: function(err){ callback(err); }
@@ -791,91 +444,52 @@ document.addEventListener("DOMContentLoaded", init);
 
   function renderPreview(headers, rows){
     previewPanel.style.display = "block";
-    // fill selectors
     [mapNameCol,mapEmailCol,mapPhoneCol].forEach(sel=>{
       sel.innerHTML = "";
-      const noneOpt = document.createElement("option"); noneOpt.value = ""; noneOpt.textContent = "(none)";
-      sel.appendChild(noneOpt);
-      headers.forEach(h=>{
-        const o = document.createElement("option"); o.value = h; o.textContent = h;
-        sel.appendChild(o);
-      });
+      const noneOpt = document.createElement("option"); noneOpt.value = ""; noneOpt.textContent = "(none)"; sel.appendChild(noneOpt);
+      headers.forEach(h=>{ const o=document.createElement("option"); o.value=h; o.textContent=h; sel.appendChild(o); });
     });
-    // Try smart defaults: pick common names
     const pick = (keys)=>(headers.find(h=>keys.some(k=>h.toLowerCase().includes(k))) || "");
     mapNameCol.value = pick(["name","display","full name","given name"]);
     mapEmailCol.value = pick(["email","e-mail"]);
     mapPhoneCol.value = pick(["phone","mobile","telephone"]);
-    // Sample table
     previewTable.innerHTML = "";
     const thead = document.createElement("thead"); const thr = document.createElement("tr");
     headers.slice(0,15).forEach(h => { const th=document.createElement("th"); th.textContent=h; thr.appendChild(th); });
     thead.appendChild(thr); previewTable.appendChild(thead);
-
     const tbody = document.createElement("tbody");
-    rows.slice(0,12).forEach(r=>{
-      const tr = document.createElement("tr");
-      headers.slice(0,15).forEach(h => { const td = document.createElement("td"); td.textContent = r[h] || ""; tr.appendChild(td); });
-      tbody.appendChild(tr);
-    });
+    rows.slice(0,12).forEach(r=>{ const tr=document.createElement("tr"); headers.slice(0,15).forEach(h=>{ const td=document.createElement("td"); td.textContent = r[h] || ""; tr.appendChild(td); }); tbody.appendChild(tr); });
     previewTable.appendChild(tbody);
   }
 
-  // Map headers to contact object
+  // mapping & import helpers
   function mapRowToContactWithMapping(row, mapping){
     const nameVal = (mapping.name && row[mapping.name]) ? row[mapping.name].toString().trim() : "";
     const emailVal = (mapping.email && row[mapping.email]) ? row[mapping.email].toString().trim() : "";
     const phoneVal = (mapping.phone && row[mapping.phone]) ? row[mapping.phone].toString().trim() : "";
-
-    // fallback to common google fields
     const nameFallback = row["Name"] || row["Full Name"] || row["Display Name"] || ((row["Given Name"]||"") + " " + (row["Family Name"]||""));
     const name = nameVal || nameFallback || (emailVal || phoneVal || "");
-    // collect phones & emails from row heuristics
     const phones=[]; const emails=[];
-    Object.keys(row).forEach(k=>{
-      const key = k.toLowerCase();
-      const val = (row[k]||"").toString().trim();
-      if(!val) return;
-      if(key.includes("phone") || key.includes("mobile") || key.includes("telephone")) phones.push(val);
-      if(key.includes("email") || key.includes("e-mail")) { if(val.indexOf("@")!==-1) emails.push(val); }
-    });
-    // include chosen phone/email from mapping if present
+    Object.keys(row).forEach(k=>{ const key = k.toLowerCase(); const val = (row[k]||"").toString().trim(); if(!val) return; if(key.includes("phone") || key.includes("mobile") || key.includes("telephone")) phones.push(val); if(key.includes("email") || key.includes("e-mail")) { if(val.indexOf("@")!==-1) emails.push(val); } });
     if(phoneVal && !phones.includes(phoneVal)) phones.unshift(phoneVal);
     if(emailVal && !emails.includes(emailVal)) emails.unshift(emailVal);
-
-    // capture relations fields for later linking
     const relations = {};
-    Object.keys(row).forEach(k=>{
-      const key = k.toLowerCase();
-      if(key.startsWith("relation") && key.includes("label")){
-        const idx = key.split(" ")[1] || ""; // crude
-        relations[k] = row[k];
-      }
-      if(key.startsWith("relation") && key.includes("value")){
-        relations[k] = row[k];
-      }
-    });
-
+    Object.keys(row).forEach(k=>{ const key = k.toLowerCase(); if(key.startsWith("relation") && (key.includes("label") || key.includes("value"))) relations[k] = row[k]; });
     return { name: name.trim(), phones: Array.from(new Set(phones)), emails: Array.from(new Set(emails)), raw: row, relations };
   }
 
-  // Helper: find existing contact by email/phone/name (best-effort)
   function findExistingContactKey(contact){
-    const keyCandidates = [];
-    if(contact.name) keyCandidates.push(contact.name.toLowerCase());
-    if(contact.emails) contact.emails.forEach(e=>keyCandidates.push(e.toLowerCase()));
-    if(contact.phones) contact.phones.forEach(p=>keyCandidates.push(p.replace(/\s|[-().]/g,"")));
-    for(const p of Object.values(people)){
-      // match email
-      if(contact.emails && contact.emails.some(e => (p.emails||[]).includes(e))) return p.id;
-      if(contact.phones && contact.phones.some(ph => (p.phones||[]).map(x=>x.replace(/\s|[-().]/g,"")).includes(ph.replace(/\s|[-().]/g,"")))) return p.id;
-      // match name (exact, case-insensitive)
-      if(contact.name && p.name && contact.name.toLowerCase() === p.name.toLowerCase()) return p.id;
+    if(!contact) return null;
+    // exact email or phone match preferred
+    for(const id in people){
+      const p = people[id];
+      if(contact.emails && contact.emails.some(e => (p.emails||[]).includes(e))) return id;
+      if(contact.phones && contact.phones.some(ph => (p.phones||[]).map(x=>x.replace(/\s|[-().]/g,"")).includes(ph.replace(/\s|[-().]/g,"")))) return id;
+      if(contact.name && p.name && contact.name.toLowerCase() === p.name.toLowerCase()) return id;
     }
     return null;
   }
 
-  // apply cluster rules (suffix tokens)
   function detectCluster(contact, rules){
     if(!rules || !rules.length) return null;
     const lowerName = (contact.name||"").toLowerCase();
@@ -883,33 +497,21 @@ document.addEventListener("DOMContentLoaded", init);
       const rr = r.toLowerCase().trim();
       if(!rr) continue;
       if(lowerName.endsWith(rr)) return rr;
-      // also check emails
       if(contact.emails && contact.emails.some(e => e.toLowerCase().includes(rr))) return rr;
     }
     return null;
   }
 
-  async function doImportCsv(){
+  function doImportCsv(){
     const file = fileInput && fileInput.files && fileInput.files[0];
     if(!file){ alert("Choose a CSV file first"); return; }
-    // mapping chosen by user (if preview was skipped, try heuristics)
     const mapping = { name: mapNameCol.value || "", email: mapEmailCol.value || "", phone: mapPhoneCol.value || "" };
     const clusterRulesRaw = (clusterRulesInput.value || "").split(",").map(s=>s.trim()).filter(Boolean);
     const autoLink = !!autoLinkCheckbox.checked;
-
     setStatus("Starting import (streaming)...");
     log(`Import started: file=${file.name}, mapping=${JSON.stringify(mapping)}, clusters=${clusterRulesRaw.join(",")}`, "info");
-
-    // Keep a temporary map of relation hints to apply after import (map relationValue -> createdId)
-    const relationRecords = []; // {sourceTmpId, relations: {...}}
-
+    const relationRecords = [];
     let rowsProcessed = 0, created = 0, merged = 0;
-    const existingKeys = new Map();
-    Object.values(people).forEach(p => {
-      const key = (p.name||"").toLowerCase() + "|" + ((p.emails && p.emails[0])||"") + "|" + ((p.phones && p.phones[0])||"");
-      existingKeys.set(key, p.id);
-    });
-
     Papa.parse(file, {
       header:true, skipEmptyLines:true, worker:true,
       step: function(results){
@@ -918,22 +520,15 @@ document.addEventListener("DOMContentLoaded", init);
         if(rowsProcessed % 200 === 0) setStatus(`Parsing… ${rowsProcessed} rows`);
         try{
           const contact = mapRowToContactWithMapping(row, mapping);
-          // If contact name is empty, try a few more fallbacks
-          if(!contact.name || contact.name.trim()===""){
-            contact.name = contact.emails[0] || contact.phones[0] || "(Unnamed)";
-          }
-          // detect cluster
+          if(!contact.name || contact.name.trim()==="") contact.name = contact.emails[0] || contact.phones[0] || "(Unnamed)";
           const cluster = detectCluster(contact, clusterRulesRaw);
-          // create or merge
           const existingId = findExistingContactKey(contact);
           if(existingId){
             const p = people[existingId];
             (contact.phones||[]).forEach(ph => { if(!p.phones) p.phones=[]; if(!p.phones.includes(ph)) p.phones.push(ph); });
             (contact.emails||[]).forEach(em => { if(!p.emails) p.emails=[]; if(!p.emails.includes(em)) p.emails.push(em); });
             if(contact.name && (!p.name || p.name.trim()==="")) p.name = contact.name;
-            if(contact.raw){
-              p.notes = [p.notes, "Imported: " + Object.values(contact.raw).slice(0,3).join(" | ")].filter(Boolean).join(" • ");
-            }
+            if(contact.raw){ p.notes = [p.notes, "Imported: " + Object.values(contact.raw).slice(0,3).join(" | ")].filter(Boolean).join(" • "); }
             if(cluster) p._cluster = cluster;
             merged++;
             relationRecords.push({sourceId: existingId, relations: contact.relations});
@@ -944,46 +539,35 @@ document.addEventListener("DOMContentLoaded", init);
             created++;
             relationRecords.push({sourceId: id, relations: contact.relations});
           }
-        }catch(e){
-          log("CSV row parse error: "+e.message, "error");
-        }
+        }catch(e){ log("CSV row parse error: "+e.message,"error"); }
       },
       complete: function(){
-        // After rows processed, attempt relation linking
         if(autoLink){
           log("Attempting auto-link via Relation fields", "info");
-          // Strategy: look for columns with 'relation' in header names -- we collected relation fields per row as raw entry.
           relationRecords.forEach(rr => {
             const relObj = rr.relations || {};
             Object.keys(relObj).forEach(k => {
               const val = (relObj[k] || "").toString().trim();
               if(!val) return;
-              // Try to find a contact by exact name or email
               const target = Object.values(people).find(p => (p.name && p.name.toLowerCase() === val.toLowerCase()) || (p.emails && p.emails.some(e=>e.toLowerCase()===val.toLowerCase())));
               if(target){
-                // create mutual association by treating as parent-child if label suggests parent/child else we add as child on both sides (associative link)
                 const source = people[rr.sourceId];
-                // Determine heuristics from key (if key name has 'parent' or 'mother' or 'father' treat as parent)
                 const keyLower = k.toLowerCase();
                 if(keyLower.includes("parent") || keyLower.includes("mother") || keyLower.includes("father")){
-                  // source -> target parent relationship (target is parent of source)
                   if(!source.parents.includes(target.id)) source.parents.push(target.id);
                   if(!target.children.includes(source.id)) target.children.push(source.id);
                 } else if(keyLower.includes("child")){
                   if(!source.children.includes(target.id)) source.children.push(target.id);
                   if(!target.parents.includes(source.id)) target.parents.push(source.id);
                 } else {
-                  // generic link: put each other as children (undirected association)
                   if(!source.children.includes(target.id)) source.children.push(target.id);
                   if(!target.children.includes(source.id)) target.children.push(source.id);
                 }
-                // add notes
                 source.notes = [source.notes, `Linked:${val}`].filter(Boolean).join(" • ");
               }
             });
           });
         }
-
         saveToStorage();
         refreshAll();
         if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
@@ -995,45 +579,41 @@ document.addEventListener("DOMContentLoaded", init);
     });
   }
 
-  // Preview wiring
-  // previewCsvBtn already wired in init()
-  // Import button wiring already wired too
+  // Attach event handlers here (ensures scope is correct)
+  document.addEventListener("DOMContentLoaded", function(){
+    previewBtn && previewBtn.addEventListener("click", previewCsv);
+    importBtn && importBtn.addEventListener("click", doImportCsv);
+  });
 
+  // expose small helpers for debug if needed
+  window._PBD_csv = { previewCsv: previewCsv, doImportCsv: doImportCsv };
 })();
 
-/* ===========================
-   Cytoscape Visualizer (cluster coloring)
-   =========================== */
+/* Cytoscape visualizer (unchanged ideas but robust wiring) */
 let cyInstance = null;
-function buildCytoscapeElements(limitNodes=2000){
-  const nodes=[]; const edges=[];
-  const clusterColors = {};
-  const palette = ["#e6f0ff","#fff7ed","#ecfccb","#fde2f3","#e6fffa","#f0f9ff"];
-  let colorIdx=0;
-  Object.values(people).forEach(p=>{
+function buildCytoscapeElements(){
+  const nodes = []; const edges = []; const clusterColors={}; const palette=["#e6f0ff","#fff7ed","#ecfccb","#fde2f3","#e6fffa","#f0f9ff"]; let colorIdx=0;
+  Object.values(people).forEach(p => {
     const label = (p.name && p.name.trim()) ? p.name : (p.emails && p.emails[0]) || (p.phones && p.phones[0]) || "(Unnamed)";
-    let cluster = p._cluster || "";
+    const cluster = p._cluster || "";
     if(cluster && !clusterColors[cluster]) clusterColors[cluster] = palette[(colorIdx++) % palette.length];
     nodes.push({ data: { id:'p'+p.id, label, cluster } });
-    (p.children||[]).forEach(childId => {
-      if(people[childId]) edges.push({ data: { id:`e${p.id}_${childId}`, source:'p'+p.id, target:'p'+childId } });
-    });
+    (p.children||[]).forEach(childId => { if(people[childId]) edges.push({ data: { id:`e${p.id}_${childId}`, source:'p'+p.id, target:'p'+childId } }); });
   });
-  // attach cluster colors to nodes via style in renderCytoscape
-  return {nodes, edges, clusterColors};
+  return { nodes, edges, clusterColors };
 }
 
 function renderCytoscape(){
   const cyEl = document.getElementById('cy');
   if(!cyEl) return;
-  const elementsObj = buildCytoscapeElements();
-  const elements = elementsObj.nodes.concat(elementsObj.edges);
-  if(cyInstance){ cyInstance.destroy(); cyInstance = null; }
+  const obj = buildCytoscapeElements();
+  const elements = obj.nodes.concat(obj.edges);
+  if(cyInstance){ try{ cyInstance.destroy(); }catch(e){} cyInstance = null; }
   cyInstance = cytoscape({
     container: cyEl,
     elements,
     style: [
-      { selector: 'node', style: { 'label': 'data(label)', 'text-valign': 'center', 'text-wrap': 'wrap', 'width': 'label', 'padding': '6px', 'background-color': '#e6f0ff', 'border-color':'#2563eb', 'border-width':1 } },
+      { selector: 'node', style: { 'label': 'data(label)', 'text-valign': 'center', 'text-wrap': 'wrap', 'width': 'label', 'padding':'6px', 'background-color': '#e6f0ff', 'border-color':'#2563eb', 'border-width':1 } },
       { selector: 'edge', style: { 'width': 2, 'line-color': '#cfe0ff', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#cfe0ff', 'curve-style': 'bezier' } }
     ],
     layout: { name: 'breadthfirst', directed: true, padding: 10, spacingFactor: 1.2 },
@@ -1043,39 +623,18 @@ function renderCytoscape(){
   Object.values(people).forEach(p=>{
     if(p._cluster){
       const node = cyInstance.getElementById('p'+p.id);
-      if(node && node.length){
-        const c = elementsObj.clusterColors[p._cluster] || "#e6f0ff";
-        node.style('background-color', c);
-      }
+      if(node && node.length){ const c = obj.clusterColors[p._cluster] || "#e6f0ff"; node.style('background-color', c); }
     }
   });
-  cyInstance.on('tap','node', (evt)=>{
-    const id = evt.target.id().slice(1);
-    const p = people[id];
-    if(!p) return;
-    // show small panel (alert for now)
-    alert(`${p.name || '(Unnamed)'}\n${(p.emails && p.emails[0]) || ''}\n${(p.phones && p.phones[0]) || ''}\n${p.notes || ''}`);
-  });
+  cyInstance.on('tap','node', (evt)=>{ const id = evt.target.id().slice(1); const p = people[id]; if(!p) return; alert(`${p.name || '(Unnamed)'}\n${(p.emails && p.emails[0]) || ''}\n${(p.phones && p.phones[0]) || ''}\n${p.notes || ''}`); });
 }
 
-function toggleVisualize(){
-  const panel = document.getElementById('cyContainer');
-  const tree = document.getElementById('treeContainer');
-  if(panel.style.display === 'none' || panel.style.display === ''){
-    panel.style.display = 'block'; tree.style.display = 'none'; renderCytoscape();
-  } else {
-    panel.style.display = 'none'; tree.style.display = 'block';
-  }
-}
+function toggleVisualize(){ const panel = document.getElementById('cyContainer'); const tree = document.getElementById('treeContainer'); if(panel.style.display === 'none' || panel.style.display === ''){ panel.style.display = 'block'; tree.style.display = 'none'; renderCytoscape(); } else { panel.style.display = 'none'; tree.style.display = 'block'; } }
 
-/* ===========================
-   About modal (light)
-   =========================== */
+/* About popup */
 function showAbout(){
-  const msg = `Pale Blue Dot — We all live on this small planet called Earth. This app visualizes connections between beings (people & animals) to help you explore your relationships.\n\nSource & inspiration: 'Pale Blue Dot' (Carl Sagan).`;
-  // show image and text in a small popup window
   const w = window.open("", "aboutPBD", "width=720,height=520,scrollbars=yes");
-  if(!w) return alert(msg);
+  if(!w) return alert("Pale Blue Dot — we couldn't open the about window.");
   w.document.title = "About — Pale Blue Dot";
   w.document.body.style.fontFamily = "Inter, Arial, sans-serif";
   w.document.body.style.background = "#fff";
@@ -1086,12 +645,14 @@ function showAbout(){
       <figcaption style="font-size:0.9rem;color:#555;margin-top:6px">The original "Pale Blue Dot" image — NASA / Voyager 1</figcaption>
     </figure>
     <p style="font-size:0.9rem;color:#444">Ref: <a href="https://en.wikipedia.org/wiki/Pale_Blue_Dot" target="_blank">Pale Blue Dot (Wikipedia)</a></p>
-    <p style="font-size:0.9rem;color:#444">This app is local-first. No login is required. Use CSV import to visualize your contacts quickly.</p>
     <div style="margin-top:10px"><button onclick="window.close()" style="padding:8px 12px;border-radius:8px;border:0;background:#2563eb;color:#fff">Close</button></div>
   </div>`;
 }
 
-/* End of file */
+/* DOM ready: initialize app wiring */
+document.addEventListener("DOMContentLoaded", function(){
+  try{ appInit(); }catch(e){ console.error("appInit failed", e); log("appInit failed: "+e.message, "error"); }
+});
 </script>
 </body>
 </html>
