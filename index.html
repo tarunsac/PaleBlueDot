@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="A simple way to visualize relationships among all beings on our pale blue dot." />
   <style>
-    /* Minimal, polished layout adapted from the MVP */
     :root{
       --bg:#f6f7fb; --card:#ffffff; --muted:#6b7280; --accent:#2563eb; --danger:#dc2626;
     }
@@ -41,6 +40,8 @@
     .flex{display:flex;gap:8px;align-items:center}
     .grow{flex:1}
     footer{padding:10px 18px;font-size:0.82rem;color:var(--muted)}
+    /* Versions panel tweaks */
+    #pbd_versions_panel { display: none; margin-top:8px; border-radius:8px; padding:10px; background:#fbfdff; border:1px solid #eef6ff; }
   </style>
 </head>
 <body>
@@ -137,6 +138,27 @@
     </div>
     <label for="jsonArea" style="margin-top:8px">JSON</label>
     <textarea id="jsonArea" placeholder="Exported JSON appears here; paste JSON to import"></textarea>
+
+    <!-- PBDLocal UI: autosave / undo / versions -->
+    <div id="pbd_local_controls" style="margin-top:12px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="pbd_undo_btn" class="btn-secondary" title="Undo last change">Undo</button>
+        <button id="pbd_save_version_btn" class="btn-secondary" title="Save a named version">Save version</button>
+        <button id="pbd_show_versions_btn" class="btn-secondary" title="Show saved versions">Versions</button>
+        <button id="pbd_clear_versions_btn" class="btn-danger" title="Clear all saved versions">Clear versions</button>
+        <div id="pbd_saved_indicator" style="margin-left:auto;font-size:0.85rem;color:#4b5563">Auto-saved: —</div>
+      </div>
+
+      <!-- Versions dialog (hidden by default) -->
+      <div id="pbd_versions_panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>Saved versions</strong>
+          <button id="pbd_close_versions" class="btn-secondary" style="font-size:0.85rem">Close</button>
+        </div>
+        <div id="pbd_versions_list" style="margin-top:8px;max-height:220px;overflow:auto"></div>
+      </div>
+    </div>
+
   </section>
 
   <section class="card">
@@ -199,6 +221,8 @@ function resetAll(){
   nextId = 1;
   saveToStorage();
   refreshAll();
+  // notify PBDLocal of change
+  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
 /* Helpers */
@@ -220,7 +244,6 @@ function refreshSelects(){
   const rootSelect = document.getElementById("rootSelect");
   [personSelect,parentSelect,childSelect,rootSelect].forEach(s => { if(s) s.innerHTML=""; });
 
-  // personSelect gets "new" option
   if(personSelect){
     const opt = document.createElement("option"); opt.value = ""; opt.textContent = "— New entity —";
     personSelect.appendChild(opt);
@@ -282,6 +305,9 @@ function saveFromForm(){
   }
   saveToStorage(); refreshAll();
   document.getElementById("personSelect").value = id;
+
+  // PBDLocal: notify change
+  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 function deletePerson(){
   const id = document.getElementById("personSelect").value;
@@ -293,6 +319,9 @@ function deletePerson(){
   });
   delete people[id];
   saveToStorage(); clearForm(); refreshAll();
+
+  // PBDLocal: notify change
+  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
 /* Relationships */
@@ -306,6 +335,9 @@ function linkParentChild(){
   if(!parent.children.includes(childId)) parent.children.push(childId);
   if(!child.parents.includes(parentId)) child.parents.push(parentId);
   saveToStorage(); refreshAll();
+
+  // PBDLocal: notify change
+  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 function unlinkParentChild(){
   const parentId = document.getElementById("parentSelect").value;
@@ -315,6 +347,9 @@ function unlinkParentChild(){
   if(parent) parent.children = parent.children.filter(x=>x!==childId);
   if(child) child.parents = child.parents.filter(x=>x!==parentId);
   saveToStorage(); refreshAll();
+
+  // PBDLocal: notify change
+  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
 }
 
 /* Tree rendering */
@@ -383,6 +418,9 @@ function importJSON(){
     if(!confirm("Import will overwrite local data. Continue?")) return;
     people = parsed.people; nextId = parsed.nextId || 1;
     saveToStorage(); refreshAll();
+
+    // PBDLocal: notify change
+    if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
   }catch(e){ alert("Invalid JSON"); console.error(e); }
 }
 
@@ -402,6 +440,235 @@ function init(){
   document.getElementById("clearAllBtn").addEventListener("click", resetAll);
 }
 document.addEventListener("DOMContentLoaded", init);
+
+/* ===========================
+   PBDLocal: local autosave, undo & versions
+   Integrated into this single-file app
+   =========================== */
+
+(function(){
+  const STORAGE_KEYS = {
+    AUTO: "pbd_local_auto",
+    UNDO: "pbd_local_undo",
+    VERSIONS: "pbd_local_versions"
+  };
+  const AUTOSAVE_DEBOUNCE_MS = 1500;
+  const UNDO_MAX = 30;
+  const VERSIONS_MAX = 50;
+  const REFRESH_FN = window.refreshAll || (() => { console.warn("No refresh function found."); });
+
+  let autosaveTimer = null;
+  let lastAutosaveAt = null;
+
+  function makeSnapshot() {
+    try {
+      return {
+        ts: Date.now(),
+        people: JSON.parse(JSON.stringify(window.people || {})),
+        nextId: window.nextId || 1
+      };
+    } catch (e) {
+      console.error("snapshot failed", e);
+      return null;
+    }
+  }
+
+  function pushUndo() {
+    const stack = JSON.parse(localStorage.getItem(STORAGE_KEYS.UNDO) || "[]");
+    const snap = makeSnapshot();
+    if (!snap) return;
+    stack.push(snap);
+    while (stack.length > UNDO_MAX) stack.shift();
+    localStorage.setItem(STORAGE_KEYS.UNDO, JSON.stringify(stack));
+  }
+
+  function popUndo() {
+    const stack = JSON.parse(localStorage.getItem(STORAGE_KEYS.UNDO) || "[]");
+    if (!stack.length) return null;
+    const snap = stack.pop();
+    localStorage.setItem(STORAGE_KEYS.UNDO, JSON.stringify(stack));
+    return snap;
+  }
+
+  function addVersion(name) {
+    const versions = JSON.parse(localStorage.getItem(STORAGE_KEYS.VERSIONS) || "[]");
+    const snap = makeSnapshot();
+    if (!snap) return;
+    snap.name = name || new Date(snap.ts).toLocaleString();
+    versions.unshift(snap);
+    while (versions.length > VERSIONS_MAX) versions.pop();
+    localStorage.setItem(STORAGE_KEYS.VERSIONS, JSON.stringify(versions));
+    return snap;
+  }
+
+  function listVersions() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.VERSIONS) || "[]");
+  }
+
+  function clearVersions() {
+    localStorage.removeItem(STORAGE_KEYS.VERSIONS);
+  }
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      const snap = makeSnapshot();
+      if (!snap) return;
+      localStorage.setItem(STORAGE_KEYS.AUTO, JSON.stringify(snap));
+      lastAutosaveAt = snap.ts;
+      updateSavedIndicator();
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }
+
+  function onAppChange_localSave() {
+    try { pushUndo(); } catch(e) { console.warn(e); }
+    scheduleAutosave();
+  }
+
+  function restoreSnapshot(snap, options = {saveToUndo: true}) {
+    if (!snap) return;
+    if (options.saveToUndo) pushUndo();
+    window.people = JSON.parse(JSON.stringify(snap.people || {}));
+    window.nextId = snap.nextId || 1;
+    localStorage.setItem(STORAGE_KEYS.AUTO, JSON.stringify(snap));
+    lastAutosaveAt = snap.ts;
+    REFRESH_FN();
+    updateSavedIndicator();
+  }
+
+  function undoLastChange() {
+    const snap = popUndo();
+    if (!snap) { alert("Nothing to undo"); return; }
+    restoreSnapshot(snap, {saveToUndo: false});
+  }
+
+  function updateSavedIndicator() {
+    const el = document.getElementById("pbd_saved_indicator");
+    if (!el) return;
+    if (!lastAutosaveAt) {
+      const raw = localStorage.getItem(STORAGE_KEYS.AUTO);
+      if (raw) {
+        try { lastAutosaveAt = JSON.parse(raw).ts; } catch(e) { lastAutosaveAt = null; }
+      }
+    }
+    if (lastAutosaveAt) {
+      el.textContent = "Auto-saved: " + new Date(lastAutosaveAt).toLocaleTimeString();
+    } else {
+      el.textContent = "Auto-saved: —";
+    }
+  }
+
+  function renderVersionsPanel() {
+    const panel = document.getElementById("pbd_versions_panel");
+    const list = document.getElementById("pbd_versions_list");
+    if (!panel || !list) return;
+    const vs = listVersions();
+    if (!vs.length) {
+      list.innerHTML = "<div style='color:#6b7280'>No saved versions.</div>";
+      return;
+    }
+    list.innerHTML = "";
+    vs.forEach((v, idx) => {
+      const item = document.createElement("div");
+      item.style.padding = "8px";
+      item.style.borderBottom = "1px dashed #eef6ff";
+      item.style.display = "flex";
+      item.style.justifyContent = "space-between";
+      item.style.alignItems = "center";
+
+      const left = document.createElement("div");
+      left.innerHTML = `<div style="font-weight:700">${v.name || new Date(v.ts).toLocaleString()}</div>
+                        <div style="font-size:0.85rem;color:#6b7280">Saved: ${new Date(v.ts).toLocaleString()}</div>`;
+      item.appendChild(left);
+
+      const right = document.createElement("div" );
+      right.style.display = "flex";
+      right.style.gap = "8px";
+
+      const restoreBtn = document.createElement("button");
+      restoreBtn.className = "btn-secondary";
+      restoreBtn.textContent = "Restore";
+      restoreBtn.onclick = () => {
+        if (!confirm("Restore this version? This will overwrite current data.")) return;
+        restoreSnapshot(v, {saveToUndo: true});
+        alert("Restored version: " + (v.name || new Date(v.ts).toLocaleString()));
+      };
+      right.appendChild(restoreBtn);
+
+      const downloadBtn = document.createElement("button");
+      downloadBtn.className = "btn-secondary";
+      downloadBtn.textContent = "Download";
+      downloadBtn.onclick = () => {
+        const data = JSON.stringify(v, null, 2);
+        const blob = new Blob([data], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `PaleBlueDot-version-${new Date(v.ts).toISOString()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      };
+      right.appendChild(downloadBtn);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn-danger";
+      delBtn.textContent = "Delete";
+      delBtn.onclick = () => {
+        if (!confirm("Delete this saved version?")) return;
+        const arr = listVersions();
+        arr.splice(idx, 1);
+        localStorage.setItem(STORAGE_KEYS.VERSIONS, JSON.stringify(arr));
+        renderVersionsPanel();
+      };
+      right.appendChild(delBtn);
+
+      item.appendChild(right);
+      list.appendChild(item);
+    });
+  }
+
+  /* Hook up UI events */
+  document.addEventListener("DOMContentLoaded", () => {
+    const undoBtn = document.getElementById("pbd_undo_btn");
+    const saveVerBtn = document.getElementById("pbd_save_version_btn");
+    const showVerBtn = document.getElementById("pbd_show_versions_btn");
+    const closeVerBtn = document.getElementById("pbd_close_versions");
+    const versionsPanel = document.getElementById("pbd_versions_panel");
+    const clearVerBtn = document.getElementById("pbd_clear_versions_btn");
+
+    if (undoBtn) undoBtn.addEventListener("click", undoLastChange);
+    if (saveVerBtn) saveVerBtn.addEventListener("click", () => {
+      const name = prompt("Enter a name for this version (optional):", new Date().toLocaleString());
+      if (name === null) return;
+      addVersion(name || undefined);
+      renderVersionsPanel();
+      alert("Version saved.");
+    });
+    if (showVerBtn) showVerBtn.addEventListener("click", () => {
+      if (versionsPanel) versionsPanel.style.display = versionsPanel.style.display === "none" ? "block" : "none";
+      renderVersionsPanel();
+    });
+    if (closeVerBtn) closeVerBtn.addEventListener("click", () => { if (versionsPanel) versionsPanel.style.display = "none"; });
+    if (clearVerBtn) clearVerBtn.addEventListener("click", () => {
+      if (!confirm("Delete all saved versions?")) return;
+      clearVersions();
+      renderVersionsPanel();
+    });
+
+    updateSavedIndicator();
+  });
+
+  /* Public API */
+  window.PBDLocal = {
+    onChange: onAppChange_localSave,
+    undo: undoLastChange,
+    saveVersion: (name) => { addVersion(name); renderVersionsPanel(); },
+    listVersions: listVersions
+  };
+})();
+/* End PBDLocal */
 </script>
 </body>
 </html>
