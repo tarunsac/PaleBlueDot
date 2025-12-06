@@ -1,658 +1,547 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Pale Blue Dot — Map connections between Earthlings</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="A simple way to visualize relationships among all beings on our pale blue dot." />
-  <style>
-    :root{ --bg:#f6f7fb; --card:#ffffff; --muted:#6b7280; --accent:#2563eb; --danger:#dc2626; }
-    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
-    body{margin:0;background:var(--bg);color:#0f172a;line-height:1.35}
-    header{background:linear-gradient(90deg,#0f172a,#111827);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
-    .brand{display:flex;gap:14px;align-items:center}
-    .logo{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e6f0ff;border:1px solid rgba(255,255,255,0.06)}
-    header h1{margin:0;font-size:1.05rem}
-    header p{margin:0;font-size:0.82rem;opacity:0.9}
-    main{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:18px;min-height:calc(100vh - 72px)}
-    @media(max-width:980px){main{grid-template-columns:1fr;padding:12px}}
-    .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 8px 20px rgba(15,23,42,0.06);border:1px solid #e6eef8}
-    label{display:block;font-size:0.78rem;color:var(--muted);margin-top:8px}
-    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef8;font-size:0.9rem;margin-top:5px}
-    button{border:0;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
-    .btn-primary{background:var(--accent);color:#fff}
-    .btn-secondary{background:#eef2ff;color:#0f172a}
-    .btn-danger{background:var(--danger);color:#fff}
-    .small{font-size:0.8rem;color:var(--muted);margin-top:8px}
-    .tree-container{min-height:420px; overflow:auto; padding:6px}
-    ul.tree{list-style:none;margin:6px 0;padding-left:14px;border-left:1px dashed #edf2ff}
-    .node{background:#fbfdff;border-radius:8px;padding:8px;border:1px solid #eef6ff;display:inline-block}
-    .name{font-weight:700}
-    .meta{font-size:0.78rem;color:var(--muted)}
-    pre.debug{background:#0b1220;color:#e6eef8;padding:10px;border-radius:8px;max-height:160px;overflow:auto}
-    .muted-link{color:#2563eb;cursor:pointer;text-decoration:none}
-    .log-panel{max-height:160px;overflow:auto;background:#0b1220;color:#e6eef8;padding:8px;border-radius:8px;font-family:monospace;font-size:0.85rem}
-    table.preview{width:100%;border-collapse:collapse}
-    table.preview th, table.preview td{border:1px solid #eef6ff;padding:6px;text-align:left;font-size:0.85rem}
-    #cy { width:100%; height:520px; border-radius:8px; background:#fff; border:1px solid #e6eef8 }
-  </style>
+<meta charset="utf-8" />
+<title>Pale Blue Dot — Connections</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+/* --- Basic styling --- */
+body { margin:0; font-family:Arial, sans-serif; background:#f4f6f9; }
+header { background:#0f172a; color:#fff; padding:16px; }
+h1 { margin:0; font-size:20px; }
+
+/* Cards */
+.card { background:#fff; padding:12px; margin:12px; border-radius:8px; 
+        box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+
+/* Inputs */
+input, select, textarea { width:100%; padding:6px; margin-top:4px;
+  border-radius:6px; border:1px solid #ccc; }
+
+/* Buttons */
+button { padding:6px 12px; border-radius:6px; border:0; cursor:pointer; }
+.btn-primary { background:#2563eb; color:#fff; }
+.btn-secondary { background:#eef2ff; }
+.btn-danger { background:#dc2626; color:#fff; }
+
+/* Tree */
+.tree-container { max-height:450px; overflow:auto; border:1px solid #ddd; padding:8px; }
+ul.tree { list-style:none; padding-left:20px; }
+.node { padding:6px; background:#eaf3ff; border-radius:6px; margin:4px 0; }
+
+/* Log */
+#logBox { background:#000; color:#0f0; padding:6px; font-size:12px; height:100px; overflow:auto; border-radius:6px; }
+
+/* Advanced */
+#advancedFields { display:none; }
+
+/* Cytoscape */
+#cy { width:100%; height:500px; border:1px solid #000; display:none; }
+
+/* Diagnostics */
+#diagBox { background:#111; color:#0f0; padding:6px; font-size:12px; border-radius:6px; display:none; }
+</style>
+
 </head>
 <body>
+
 <header>
-  <div class="brand">
-    <div class="logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" fill="#e6f0ff"/>
-        <circle cx="12" cy="12" r="2.2" fill="#0f172a"/>
-      </svg>
-    </div>
-    <div>
-      <h1>Pale Blue Dot</h1>
-      <p class="muted">Visualize connections across your world — people and animals.</p>
-    </div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:0.8rem;color:#e6eef8">Local-first • No login</div>
-    <div style="font-size:0.75rem;color:#cbd5e1">Export / Import JSON & CSV to share</div>
-    <div style="margin-top:6px"><a id="aboutLink" class="muted-link">About</a></div>
-  </div>
+  <h1>Pale Blue Dot — Relationship Mapper</h1>
 </header>
 
-<main>
-  <section class="card" aria-labelledby="controlsHeading">
-    <h2 id="controlsHeading" style="margin:0 0 8px 0">Add / Edit Entity</h2>
+<!-- =========================================================
+     CONTROLS
+========================================================= -->
+<div class="card">
 
-    <label for="personSelect">Edit existing (or leave blank for new)</label>
-    <select id="personSelect"><option value="">— New entity —</option></select>
+<h3>Add / Edit Person</h3>
 
-    <label for="nameInput">Name *</label>
-    <input id="nameInput" placeholder="e.g., Tara, Ramu, Moti (dog)" />
+<select id="personSelect"><option value="">— New —</option></select>
 
-    <div class="row" style="margin-top:4px">
-      <div style="flex:1">
-        <label for="birthInput">Birth year</label>
-        <input id="birthInput" type="number" placeholder="1985" />
-      </div>
-      <div style="flex:1">
-        <label for="deathInput">Death year</label>
-        <input id="deathInput" type="number" placeholder="(optional)" />
-      </div>
-    </div>
+<label>Name *</label>
+<input id="nameInput">
 
-    <div style="margin-top:8px">
-      <a href="#" id="showAdvancedLink" class="muted-link">Show advanced fields</a>
-    </div>
-    <div id="advancedFields" style="display:none; margin-top:8px">
-      <label for="speciesInput">Species (optional)</label>
-      <select id="speciesInput">
-        <option value="">— Not specified —</option>
-        <option>Human</option><option>Dog</option><option>Cat</option><option>Cow</option><option>Horse</option><option>Bird</option><option>Other</option>
-      </select>
+<a href="#" id="toggleAdv">Show advanced</a>
 
-      <label for="genderSelect">Gender (optional)</label>
-      <select id="genderSelect">
-        <option value="">— Not specified —</option>
-        <option value="female">Female</option><option value="male">Male</option><option value="other">Other / non-binary</option>
-      </select>
-    </div>
+<div id="advancedFields">
+  <label>Species</label>
+  <select id="speciesInput">
+    <option value="">Not specified</option>
+    <option>Human</option>
+    <option>Dog</option>
+    <option>Cat</option>
+    <option>Other</option>
+  </select>
 
-    <label for="notesInput">Notes</label>
-    <textarea id="notesInput" placeholder="e.g., 'Lives in Gwalior; rescued 2019'"></textarea>
+  <label>Gender</label>
+  <select id="genderInput">
+    <option value="">Not specified</option>
+    <option>Male</option>
+    <option>Female</option>
+    <option>Other</option>
+  </select>
+</div>
 
-    <div style="margin-top:10px" class="flex">
-      <button id="savePersonBtn" class="btn-primary">Save</button>
-      <button id="resetFormBtn" class="btn-secondary">Clear</button>
-      <button id="deletePersonBtn" class="btn-danger">Delete</button>
-    </div>
+<label>Notes</label>
+<textarea id="notesInput"></textarea>
 
-    <hr style="margin:12px 0" />
+<button class="btn-primary" id="saveBtn">Save</button>
+<button class="btn-secondary" id="clearBtn">Clear</button>
+<button class="btn-danger" id="deleteBtn">Delete</button>
 
-    <h3 style="margin:0 0 8px 0">Link relationships</h3>
-    <label for="parentSelect">Parent</label>
-    <select id="parentSelect"></select>
-    <label for="childSelect">Child</label>
-    <select id="childSelect"></select>
-    <div style="margin-top:8px" class="flex">
-      <button id="linkBtn" class="btn-primary">Link parent → child</button>
-      <button id="unlinkBtn" class="btn-secondary">Unlink (parent → child)</button>
-    </div>
+<hr>
 
-    <hr style="margin:12px 0" />
+<h3>CSV Import</h3>
+<input type="file" id="csvFile">
 
-    <h3 style="margin:0 0 8px 0">Backup / Restore</h3>
-    <div class="flex">
-      <button id="exportBtn" class="btn-secondary">Export JSON</button>
-      <button id="importBtn" class="btn-secondary">Import JSON</button>
-      <button id="clearAllBtn" class="btn-danger">Wipe all</button>
-    </div>
-    <label for="jsonArea" style="margin-top:8px">JSON</label>
-    <textarea id="jsonArea" placeholder="Exported JSON appears here; paste JSON to import"></textarea>
+<button class="btn-secondary" id="previewBtn">Preview</button>
+<button class="btn-primary" id="importBtn">Import</button>
 
-    <hr style="margin:12px 0" />
+<div id="csvPreview" style="display:none; margin-top:12px;">
+  <h4>Preview</h4>
+  <div id="previewTableBox" style="max-height:200px; overflow:auto; border:1px solid #ccc;"></div>
 
-    <h3 style="margin:0 0 8px 0">CSV Import (Google Contacts)</h3>
+  <label>Map Name Column</label>
+  <select id="nameCol"></select>
 
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="csvFileInput" type="file" accept=".csv" />
-      <button id="previewCsvBtn" class="btn-secondary">Preview</button>
-      <button id="importCsvBtn" class="btn-primary" style="margin-left:auto">Import CSV</button>
-    </div>
+  <label>Map Email Column</label>
+  <select id="emailCol"></select>
 
-    <div id="csvPreviewPanel" style="display:none;margin-top:10px">
-      <div style="display:flex;gap:8px;align-items:center">
-        <div style="flex:1">
-          <div class="small">Preview first rows — choose columns that map to Name / Email / Phone:</div>
-          <div style="display:flex;gap:8px;margin-top:6px">
-            <select id="mapNameCol"></select>
-            <select id="mapEmailCol"></select>
-            <select id="mapPhoneCol"></select>
-          </div>
-        </div>
-        <div style="width:220px">
-          <label>Cluster suffix rules (comma-separated)</label>
-          <input id="clusterRulesInput" placeholder="@JBF,@MSFT,@AKAM" />
-          <div class="small">Suffix tokens will mark clusters and color nodes.</div>
-        </div>
-      </div>
+  <label>Map Phone Column</label>
+  <select id="phoneCol"></select>
+</div>
 
-      <div style="margin-top:10px">
-        <div class="small">Sample rows (first 12)</div>
-        <div style="overflow:auto;margin-top:6px">
-          <table class="preview" id="csvPreviewTable"></table>
-        </div>
-        <div style="margin-top:8px">
-          <label><input id="autoLinkRelations" type="checkbox" checked /> Auto-link using Relation N - Label/Value columns (best-effort)</label>
-        </div>
-      </div>
-    </div>
+</div>
 
-    <div style="margin-top:10px">
-      <div class="flex" style="align-items:center">
-        <div id="csvImportStatus" style="font-size:0.9rem;color:#6b7280">No import activity</div>
-        <button id="downloadLogBtn" class="btn-secondary" style="margin-left:auto">Download Log</button>
-      </div>
-      <div style="margin-top:8px" class="log-panel" id="importLog"></div>
-    </div>
 
-    <div id="pbd_local_controls" style="margin-top:12px;">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button id="pbd_undo_btn" class="btn-secondary" title="Undo last change">Undo</button>
-        <button id="pbd_save_version_btn" class="btn-secondary" title="Save a named version">Save version</button>
-        <button id="pbd_show_versions_btn" class="btn-secondary" title="Show saved versions">Versions</button>
-        <button id="pbd_clear_versions_btn" class="btn-danger" title="Clear all saved versions">Clear versions</button>
-        <div id="pbd_saved_indicator" style="margin-left:auto;font-size:0.85rem;color:#4b5563">Auto-saved: —</div>
-      </div>
+<!-- =========================================================
+     TREE + VISUALIZER SECTION
+========================================================= -->
+<div class="card">
 
-      <div id="pbd_versions_panel">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>Saved versions</strong>
-          <button id="pbd_close_versions" class="btn-secondary" style="font-size:0.85rem">Close</button>
-        </div>
-        <div id="pbd_versions_list" style="margin-top:8px;max-height:220px;overflow:auto"></div>
-      </div>
-    </div>
+<h3>Tree</h3>
 
-  </section>
+<select id="rootSelect"></select>
+<button class="btn-secondary" id="visualizeBtn">Toggle Visualizer</button>
 
-  <section class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h2 style="margin:0">Pale Blue Dot — Tree</h2>
-      <div class="muted">View descendants or visualize clusters</div>
-    </div>
+<div id="treeContainer" class="tree-container"></div>
 
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <div class="grow">
-        <label for="rootSelect">Root entity</label>
-        <select id="rootSelect"></select>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="autoRootBtn" class="btn-secondary">Auto root</button>
-        <button id="visualizeBtn" class="btn-secondary">Visualize</button>
-      </div>
-    </div>
+<div id="cy"></div>
 
-    <div class="tree-container card" id="treeContainer" style="margin-top:10px"></div>
+</div>
 
-    <div id="cyContainer" style="display:none;margin-top:12px">
-      <div id="cy"></div>
-    </div>
 
-    <details style="margin-top:12px">
-      <summary class="muted">Raw data (debug)</summary>
-      <pre id="debugDump" class="debug"></pre>
-    </details>
-  </section>
-</main>
+<!-- =========================================================
+     DIAGNOSTICS + LOGS
+========================================================= -->
+<div class="card">
+<h3>Log</h3>
+<div id="logBox"></div>
 
-<footer>
-  Pale Blue Dot — local-first connection mapper • Export JSON to share with others
-</footer>
+<button id="diagBtn" class="btn-secondary">Run Diagnostics</button>
+<div id="diagBox"></div>
+</div>
+
+
+<!-- =========================================================
+     DEMO DATA
+========================================================= -->
+<div class="card">
+<h3>Demo</h3>
+<button class="btn-primary" id="demoBtn">Load Demo Data</button>
+</div>
+
+
+<!-- =========================================================
+     ABOUT
+========================================================= -->
+<div class="card">
+<button id="aboutBtn" class="btn-secondary">About</button>
+</div>
 
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
 
 <script>
-/* ===========
-   App state & persistence
-   =========== */
+/* =========================================================
+   GLOBAL SAFE LOGGER
+========================================================= */
+function log(msg){
+  console.log(msg);
+  const box = document.getElementById('logBox');
+  if(box){
+    box.textContent += msg + "\\n";
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+/* =========================================================
+   SAFE EXEC WRAPPER
+========================================================= */
+function safe(fn){
+  try { fn(); }
+  catch(e){
+    log("ERROR: " + e.message);
+  }
+}
+
+/* =========================================================
+   DATA STORE
+========================================================= */
 let people = {};
 let nextId = 1;
-const STORAGE_KEY = "pale_blue_dot_v1";
-const importLogs = [];
-function log(msg, level="info"){ const ts = new Date().toISOString(); importLogs.push({ts,level,msg}); renderLog(); console.log(`[PBD] ${ts} ${level}: ${msg}`); }
-function renderLog(){ const el = document.getElementById("importLog"); if(!el) return; el.innerHTML = importLogs.map(x=>`${x.ts} ${x.level.toUpperCase()}: ${escapeHtml(x.msg)}`).join("\n"); }
-function downloadLog(){ const blob = new Blob([JSON.stringify(importLogs,null,2)],{type:"application/json"}); const url = URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="pbd-import-log.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-function escapeHtml(s){ return (s||"").toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function loadFromStorage(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const parsed = JSON.parse(raw);
-    if(parsed && typeof parsed === "object"){
-      people = parsed.people || {};
-      nextId = parsed.nextId || 1;
-      log("Loaded data from localStorage", "info");
+function saveStore(){
+  safe(() => {
+    localStorage.setItem("PBD_STORE", JSON.stringify({people, nextId}));
+    log("Saved");
+  });
+}
+
+function loadStore(){
+  safe(() => {
+    const raw = localStorage.getItem("PBD_STORE");
+    if(raw){
+      const obj = JSON.parse(raw);
+      people = obj.people || {};
+      nextId = obj.nextId || 1;
     }
-  }catch(e){ console.error(e); log("Failed to load from storage: "+e.message, "error") }
+    log("Loaded");
+  });
 }
-function saveToStorage(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({people, nextId})); refreshDebug(); log("Saved data to localStorage","info"); }catch(e){ console.error(e); log("Failed to save to storage: "+e.message,"error"); } }
 
-/* Helpers & labels */
-function personLabel(p){
-  if(!p) return "(unknown)";
-  const name = (p.name || "").toString().trim();
-  const firstEmail = (p.emails && p.emails.length) ? p.emails[0] : "";
-  const firstPhone = (p.phones && p.phones.length) ? p.phones[0] : "";
-  const primary = name || firstEmail || firstPhone || "(Unnamed)";
-  const hints = [];
-  if (p.birthYear) hints.push(p.birthYear);
-  if (p.species && p.species.toLowerCase() !== 'human') hints.push(p.species);
-  if (p.gender) hints.push(p.gender);
-  if (p._cluster) hints.push(p._cluster);
-  const hintStr = hints.length ? " • " + hints.join(" • ") : "";
-  return primary + hintStr;
-}
-function getAllSorted(){ return Object.values(people).sort((a,b)=> (a.name||"").localeCompare(b.name||"")); }
+/* =========================================================
+   RENDERERS
+========================================================= */
+function renderSelects(){
+  safe(() => {
+    const ps = document.getElementById('personSelect');
+    const rs = document.getElementById('rootSelect');
+    if(!ps || !rs) return;
 
-/* UI population */
-function refreshSelects(){
-  const personSelect = document.getElementById("personSelect");
-  const parentSelect = document.getElementById("parentSelect");
-  const childSelect = document.getElementById("childSelect");
-  const rootSelect = document.getElementById("rootSelect");
-  [personSelect,parentSelect,childSelect,rootSelect].forEach(s => { if(s) s.innerHTML=""; });
+    ps.innerHTML = '<option value="">— New —</option>';
+    rs.innerHTML = '';
 
-  if(personSelect){ const opt = document.createElement("option"); opt.value = ""; opt.textContent = "— New entity —"; personSelect.appendChild(opt); }
-
-  const arr = getAllSorted();
-  arr.forEach(p => {
-    const label = personLabel(p);
-    const o1 = document.createElement("option"); o1.value = p.id; o1.textContent = label;
-    if(personSelect) personSelect.appendChild(o1);
-
-    [parentSelect, childSelect, rootSelect].forEach(sel=>{
-      if(!sel) return;
-      const o = document.createElement("option"); o.value = p.id; o.textContent = label;
-      sel.appendChild(o);
+    Object.values(people).forEach(p=>{
+      ps.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      rs.innerHTML += `<option value="${p.id}">${p.name}</option>`;
     });
   });
 }
 
-function refreshDebug(){ document.getElementById("debugDump").textContent = JSON.stringify(people, null, 2); }
-function refreshAll(){ refreshSelects(); renderTree(); refreshDebug(); }
+function renderTree(){
+  safe(() => {
+    const c = document.getElementById('treeContainer');
+    const rootId = document.getElementById('rootSelect').value;
+    c.innerHTML = '';
 
-/* CRUD + relationships (unchanged logic) */
-function clearForm(){ document.getElementById("personSelect").value = ""; document.getElementById("nameInput").value = ""; document.getElementById("birthInput").value = ""; document.getElementById("deathInput").value = ""; document.getElementById("genderSelect").value = ""; document.getElementById("speciesInput").value = ""; document.getElementById("notesInput").value = ""; }
-function loadForm(id){ const p = people[id]; if(!p) return; document.getElementById("nameInput").value = p.name||""; document.getElementById("birthInput").value = p.birthYear||""; document.getElementById("deathInput").value = p.deathYear||""; document.getElementById("genderSelect").value = p.gender||""; document.getElementById("speciesInput").value = p.species||""; document.getElementById("notesInput").value = p.notes||""; }
-function saveFromForm(){
-  const selectedId = document.getElementById("personSelect").value;
-  const name = document.getElementById("nameInput").value.trim();
-  const birthYear = document.getElementById("birthInput").value.trim();
-  const deathYear = document.getElementById("deathInput").value.trim();
-  const gender = document.getElementById("genderSelect").value;
-  const species = document.getElementById("speciesInput").value;
-  const notes = document.getElementById("notesInput").value.trim();
-  if(!name){ alert("Name is required."); return; }
-  let id = selectedId || String(nextId++);
-  if(!people[id]){ people[id] = { id, name, birthYear: birthYear||"", deathYear: deathYear||"", gender: gender||"", species: species||"", notes, phones: [], emails: [], parents: [], children: [] }; }
-  else { const p = people[id]; p.name = name; p.birthYear = birthYear||""; p.deathYear = deathYear||""; p.gender = gender||""; p.species = species||""; p.notes = notes; }
-  saveToStorage(); refreshAll(); document.getElementById("personSelect").value = id;
-  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-}
-function deletePerson(){
-  const id = document.getElementById("personSelect").value; if(!id){ alert("Select an entity to delete."); return; } if(!confirm("Delete and remove references?")) return;
-  Object.values(people).forEach(o=>{ o.parents = o.parents.filter(pid => pid !== id); o.children = o.children.filter(cid => cid !== id); });
-  delete people[id]; saveToStorage(); clearForm(); refreshAll();
-  if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-}
+    if(!rootId || !people[rootId]) return;
 
-function linkParentChild(){ const parentId = document.getElementById("parentSelect").value; const childId = document.getElementById("childSelect").value; if(!parentId || !childId){ alert("Select both parent and child."); return; } if(parentId === childId){ alert("Cannot link entity to itself."); return; } const parent = people[parentId], child = people[childId]; if(!parent || !child) return; if(!parent.children.includes(childId)) parent.children.push(childId); if(!child.parents.includes(parentId)) child.parents.push(parentId); saveToStorage(); refreshAll(); if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange(); }
-function unlinkParentChild(){ const parentId = document.getElementById("parentSelect").value; const childId = document.getElementById("childSelect").value; if(!parentId || !childId){ alert("Select both parent and child."); return; } const parent = people[parentId], child = people[childId]; if(parent) parent.children = parent.children.filter(x=>x!==childId); if(child) child.parents = child.parents.filter(x=>x!==parentId); saveToStorage(); refreshAll(); if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange(); }
-
-/* Tree rendering */
-function findRoots(){ return Object.values(people).filter(p => !p.parents || p.parents.length===0); }
-function autoPickRoot(){ const all = Object.values(people); if(all.length === 0){ alert("No contacts yet."); return; } let best = all[0]; let bestScore = ((best.parents?.length||0) + (best.children?.length||0)); all.forEach(p => { const score = ((p.parents?.length||0) + (p.children?.length||0)); if(score > bestScore) { best = p; bestScore = score; } }); document.getElementById("rootSelect").value = best.id; renderTree(); }
-function buildTreeDOM(id, visited = new Set()){ const p = people[id]; if(!p) return null; const li = document.createElement("li"); li.className = "person"; if(visited.has(id)){ const node = document.createElement("div"); node.className = "node"; node.innerHTML = `<div class="name">${p.name}</div><div class="meta">cycle</div>`; li.appendChild(node); return li; } visited.add(id); const node = document.createElement("div"); node.className = "node"; const nm = document.createElement("div"); nm.className = "name"; nm.textContent = p.name; node.appendChild(nm); const m = document.createElement("div"); m.className = "meta"; const bits = []; if(p.birthYear || p.deathYear) bits.push([p.birthYear,p.deathYear].filter(Boolean).join("–")); if(p.species && p.species.toLowerCase() !== 'human') bits.push(p.species); if(p.gender) bits.push(p.gender); if(p._cluster) bits.push(p._cluster); if(p.parents && p.parents.length) bits.push(p.parents.length + " parent(s)"); if(p.children && p.children.length) bits.push(p.children.length + " child(ren)"); m.textContent = bits.join(" • "); node.appendChild(m); if(p.notes){ const notes = document.createElement("div"); notes.className="meta"; notes.textContent=p.notes; node.appendChild(notes); } li.appendChild(node); if(p.children && p.children.length){ const ul = document.createElement("ul"); ul.className="tree"; p.children.map(cid=>people[cid]).filter(Boolean).sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(child=>{ const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(cnode); }); li.appendChild(ul); } return li; }
-function renderTree(){ const container = document.getElementById("treeContainer"); container.innerHTML=""; const rootId = document.getElementById("rootSelect").value; if(!rootId){ container.innerHTML='<div class="small">Select a root to view descendants.</div>'; return; } if(!people[rootId]){ container.innerHTML='<div class="small">Root not found.</div>'; return; } const ul = document.createElement("ul"); ul.className="tree"; const li = buildTreeDOM(rootId); if(li) ul.appendChild(li); container.appendChild(ul); }
-
-/* Export/Import JSON */
-function exportJSON(){ document.getElementById("jsonArea").value = JSON.stringify({people, nextId}, null, 2); }
-function importJSON(){ const text = document.getElementById("jsonArea").value.trim(); if(!text){ alert("Paste JSON before importing."); return; } try{ const parsed = JSON.parse(text); if(!parsed.people){ alert("JSON missing 'people'"); return; } if(!confirm("Import will overwrite local data. Continue?")) return; people = parsed.people; nextId = parsed.nextId || 1; saveToStorage(); refreshAll(); if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange(); }catch(e){ alert("Invalid JSON"); console.error(e); log("Invalid JSON import: "+e.message,"error"); } }
-
-/* Init wiring (minimal) */
-function appInit(){
-  loadFromStorage();
-  refreshAll();
-
-  // Basic UI bindings
-  document.getElementById("personSelect").addEventListener("change",(e)=>{ const v=e.target.value; if(!v) clearForm(); else loadForm(v); });
-  document.getElementById("savePersonBtn").addEventListener("click", saveFromForm);
-  document.getElementById("resetFormBtn").addEventListener("click", clearForm);
-  document.getElementById("deletePersonBtn").addEventListener("click", deletePerson);
-  document.getElementById("linkBtn").addEventListener("click", linkParentChild);
-  document.getElementById("unlinkBtn").addEventListener("click", unlinkParentChild);
-  document.getElementById("rootSelect").addEventListener("change", renderTree);
-  document.getElementById("autoRootBtn").addEventListener("click", autoPickRoot);
-  document.getElementById("visualizeBtn").addEventListener("click", toggleVisualize);
-  document.getElementById("exportBtn").addEventListener("click", exportJSON);
-  document.getElementById("importBtn").addEventListener("click", importJSON);
-  document.getElementById("clearAllBtn").addEventListener("click", resetAll);
-
-  // advanced fields toggle
-  const sa = document.getElementById("showAdvancedLink");
-  if(sa) sa.addEventListener("click", (e)=>{
-    e.preventDefault(); const adv = document.getElementById("advancedFields");
-    adv.style.display = adv.style.display === "none" ? "block" : "none";
-    sa.textContent = adv.style.display === "none" ? "Show advanced fields" : "Hide advanced fields";
-  });
-
-  // versions + pbd local hooks
-  document.getElementById("pbd_undo_btn").addEventListener("click", ()=>{ try{ const stack = JSON.parse(localStorage.getItem("pbd_local_undo")||"[]"); if(!stack.length){ alert("Nothing to undo"); return;} const snap = stack.pop(); localStorage.setItem("pbd_local_undo", JSON.stringify(stack)); if(snap){ window.people = snap.people||{}; window.nextId = snap.nextId||1; refreshAll(); } }catch(e){console.error(e)} });
-  document.getElementById("pbd_save_version_btn").addEventListener("click", ()=>{ const name = prompt("Enter a name for this version (optional):", new Date().toLocaleString()); if(name===null) return; try{ const versions = JSON.parse(localStorage.getItem("pbd_local_versions")||"[]"); const snap = { ts: Date.now(), people: JSON.parse(JSON.stringify(window.people||{})), nextId: window.nextId||1, name: name||new Date().toLocaleString() }; versions.unshift(snap); localStorage.setItem("pbd_local_versions", JSON.stringify(versions)); alert("Version saved."); }catch(e){console.error(e)} });
-  document.getElementById("pbd_show_versions_btn").addEventListener("click", ()=>{ const panel = document.getElementById("pbd_versions_panel"); panel.style.display = panel.style.display === "none" ? "block" : "none"; renderVersionsPanel(); });
-  document.getElementById("pbd_clear_versions_btn").addEventListener("click", ()=>{ if(!confirm("Delete all saved versions?")) return; localStorage.removeItem("pbd_local_versions"); renderVersionsPanel(); });
-  document.getElementById("pbd_close_versions").addEventListener("click", ()=>{ document.getElementById("pbd_versions_panel").style.display="none"; });
-
-  // about link
-  document.getElementById("aboutLink").addEventListener("click", showAbout);
-  // download log
-  document.getElementById("downloadLogBtn").addEventListener("click", downloadLog);
-}
-
-/* render versions panel helper */
-function renderVersionsPanel(){
-  const panel = document.getElementById("pbd_versions_panel");
-  const list = document.getElementById("pbd_versions_list");
-  if(!panel || !list) return;
-  const vs = JSON.parse(localStorage.getItem("pbd_local_versions")||"[]");
-  if(!vs.length){ list.innerHTML = "<div style='color:#6b7280'>No saved versions.</div>"; return; }
-  list.innerHTML = "";
-  vs.forEach((v, idx)=> {
-    const item = document.createElement("div"); item.style.padding="8px"; item.style.borderBottom="1px dashed #eef6ff"; item.style.display="flex"; item.style.justifyContent="space-between"; item.style.alignItems="center";
-    const left = document.createElement("div"); left.innerHTML = `<div style="font-weight:700">${v.name}</div><div style="font-size:0.85rem;color:#6b7280">Saved: ${new Date(v.ts).toLocaleString()}</div>`;
-    item.appendChild(left);
-    const right = document.createElement("div"); right.style.display="flex"; right.style.gap="8px";
-    const restoreBtn = document.createElement("button"); restoreBtn.className="btn-secondary"; restoreBtn.textContent="Restore"; restoreBtn.onclick = ()=>{ if(!confirm("Restore this version? This will overwrite current data.")) return; window.people = v.people||{}; window.nextId = v.nextId||1; refreshAll(); };
-    right.appendChild(restoreBtn);
-    const downloadBtn = document.createElement("button"); downloadBtn.className="btn-secondary"; downloadBtn.textContent="Download"; downloadBtn.onclick = ()=>{ const data = JSON.stringify(v,null,2); const blob = new Blob([data],{type:"application/json"}); const url = URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`pbd-version-${new Date(v.ts).toISOString()}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); };
-    right.appendChild(downloadBtn);
-    const delBtn = document.createElement("button"); delBtn.className="btn-danger"; delBtn.textContent="Delete"; delBtn.onclick = ()=>{ if(!confirm("Delete this saved version?")) return; vs.splice(idx,1); localStorage.setItem("pbd_local_versions", JSON.stringify(vs)); renderVersionsPanel(); };
-    right.appendChild(delBtn);
-    item.appendChild(right); list.appendChild(item);
-  });
-}
-
-/* CSV preview/import module (self-contained) */
-(function(){
-  const fileInput = document.getElementById("csvFileInput");
-  const previewBtn = document.getElementById("previewCsvBtn");
-  const importBtn = document.getElementById("importCsvBtn");
-  const previewPanel = document.getElementById("csvPreviewPanel");
-  const previewTable = document.getElementById("csvPreviewTable");
-  const mapNameCol = document.getElementById("mapNameCol");
-  const mapEmailCol = document.getElementById("mapEmailCol");
-  const mapPhoneCol = document.getElementById("mapPhoneCol");
-  const clusterRulesInput = document.getElementById("clusterRulesInput");
-  const autoLinkCheckbox = document.getElementById("autoLinkRelations");
-  const statusEl = document.getElementById("csvImportStatus");
-
-  let lastPreviewRows = [];
-  let lastHeaders = [];
-
-  function setStatus(s){ if(statusEl) statusEl.textContent = s; log(s,"info"); }
-  function readFileHead(file, callback){
-    if(!file) return callback(new Error("No file"));
-    Papa.parse(file, { header:true, preview:50, skipEmptyLines:true, worker:true,
-      complete: function(results){ callback(null, results); },
-      error: function(err){ callback(err); }
-    });
-  }
-
-  function previewCsv(){
-    const file = fileInput && fileInput.files && fileInput.files[0];
-    if(!file){ alert("Choose a CSV file first"); return; }
-    setStatus("Reading preview...");
-    readFileHead(file, (err, results)=>{
-      if(err){ setStatus("Preview error"); log("Preview error: "+err.message,"error"); return; }
-      lastPreviewRows = results.data || [];
-      lastHeaders = results.meta && results.meta.fields ? results.meta.fields.slice() : [];
-      renderPreview(lastHeaders, lastPreviewRows);
-      setStatus(`Preview loaded — ${lastPreviewRows.length} rows sampled`);
-    });
-  }
-
-  function renderPreview(headers, rows){
-    previewPanel.style.display = "block";
-    [mapNameCol,mapEmailCol,mapPhoneCol].forEach(sel=>{
-      sel.innerHTML = "";
-      const noneOpt = document.createElement("option"); noneOpt.value = ""; noneOpt.textContent = "(none)"; sel.appendChild(noneOpt);
-      headers.forEach(h=>{ const o=document.createElement("option"); o.value=h; o.textContent=h; sel.appendChild(o); });
-    });
-    const pick = (keys)=>(headers.find(h=>keys.some(k=>h.toLowerCase().includes(k))) || "");
-    mapNameCol.value = pick(["name","display","full name","given name"]);
-    mapEmailCol.value = pick(["email","e-mail"]);
-    mapPhoneCol.value = pick(["phone","mobile","telephone"]);
-    previewTable.innerHTML = "";
-    const thead = document.createElement("thead"); const thr = document.createElement("tr");
-    headers.slice(0,15).forEach(h => { const th=document.createElement("th"); th.textContent=h; thr.appendChild(th); });
-    thead.appendChild(thr); previewTable.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    rows.slice(0,12).forEach(r=>{ const tr=document.createElement("tr"); headers.slice(0,15).forEach(h=>{ const td=document.createElement("td"); td.textContent = r[h] || ""; tr.appendChild(td); }); tbody.appendChild(tr); });
-    previewTable.appendChild(tbody);
-  }
-
-  // mapping & import helpers
-  function mapRowToContactWithMapping(row, mapping){
-    const nameVal = (mapping.name && row[mapping.name]) ? row[mapping.name].toString().trim() : "";
-    const emailVal = (mapping.email && row[mapping.email]) ? row[mapping.email].toString().trim() : "";
-    const phoneVal = (mapping.phone && row[mapping.phone]) ? row[mapping.phone].toString().trim() : "";
-    const nameFallback = row["Name"] || row["Full Name"] || row["Display Name"] || ((row["Given Name"]||"") + " " + (row["Family Name"]||""));
-    const name = nameVal || nameFallback || (emailVal || phoneVal || "");
-    const phones=[]; const emails=[];
-    Object.keys(row).forEach(k=>{ const key = k.toLowerCase(); const val = (row[k]||"").toString().trim(); if(!val) return; if(key.includes("phone") || key.includes("mobile") || key.includes("telephone")) phones.push(val); if(key.includes("email") || key.includes("e-mail")) { if(val.indexOf("@")!==-1) emails.push(val); } });
-    if(phoneVal && !phones.includes(phoneVal)) phones.unshift(phoneVal);
-    if(emailVal && !emails.includes(emailVal)) emails.unshift(emailVal);
-    const relations = {};
-    Object.keys(row).forEach(k=>{ const key = k.toLowerCase(); if(key.startsWith("relation") && (key.includes("label") || key.includes("value"))) relations[k] = row[k]; });
-    return { name: name.trim(), phones: Array.from(new Set(phones)), emails: Array.from(new Set(emails)), raw: row, relations };
-  }
-
-  function findExistingContactKey(contact){
-    if(!contact) return null;
-    // exact email or phone match preferred
-    for(const id in people){
+    function build(id){
       const p = people[id];
-      if(contact.emails && contact.emails.some(e => (p.emails||[]).includes(e))) return id;
-      if(contact.phones && contact.phones.some(ph => (p.phones||[]).map(x=>x.replace(/\s|[-().]/g,"")).includes(ph.replace(/\s|[-().]/g,"")))) return id;
-      if(contact.name && p.name && contact.name.toLowerCase() === p.name.toLowerCase()) return id;
+      if(!p) return '';
+      let html = `<li><div class="node">${p.name}</div>`;
+      if(p.children && p.children.length){
+        html += "<ul class='tree'>";
+        p.children.forEach(ch => html += build(ch));
+        html += "</ul>";
+      }
+      html += "</li>";
+      return html;
     }
-    return null;
-  }
 
-  function detectCluster(contact, rules){
-    if(!rules || !rules.length) return null;
-    const lowerName = (contact.name||"").toLowerCase();
-    for(const r of rules){
-      const rr = r.toLowerCase().trim();
-      if(!rr) continue;
-      if(lowerName.endsWith(rr)) return rr;
-      if(contact.emails && contact.emails.some(e => e.toLowerCase().includes(rr))) return rr;
-    }
-    return null;
-  }
-
-  function doImportCsv(){
-    const file = fileInput && fileInput.files && fileInput.files[0];
-    if(!file){ alert("Choose a CSV file first"); return; }
-    const mapping = { name: mapNameCol.value || "", email: mapEmailCol.value || "", phone: mapPhoneCol.value || "" };
-    const clusterRulesRaw = (clusterRulesInput.value || "").split(",").map(s=>s.trim()).filter(Boolean);
-    const autoLink = !!autoLinkCheckbox.checked;
-    setStatus("Starting import (streaming)...");
-    log(`Import started: file=${file.name}, mapping=${JSON.stringify(mapping)}, clusters=${clusterRulesRaw.join(",")}`, "info");
-    const relationRecords = [];
-    let rowsProcessed = 0, created = 0, merged = 0;
-    Papa.parse(file, {
-      header:true, skipEmptyLines:true, worker:true,
-      step: function(results){
-        const row = results.data;
-        rowsProcessed++;
-        if(rowsProcessed % 200 === 0) setStatus(`Parsing… ${rowsProcessed} rows`);
-        try{
-          const contact = mapRowToContactWithMapping(row, mapping);
-          if(!contact.name || contact.name.trim()==="") contact.name = contact.emails[0] || contact.phones[0] || "(Unnamed)";
-          const cluster = detectCluster(contact, clusterRulesRaw);
-          const existingId = findExistingContactKey(contact);
-          if(existingId){
-            const p = people[existingId];
-            (contact.phones||[]).forEach(ph => { if(!p.phones) p.phones=[]; if(!p.phones.includes(ph)) p.phones.push(ph); });
-            (contact.emails||[]).forEach(em => { if(!p.emails) p.emails=[]; if(!p.emails.includes(em)) p.emails.push(em); });
-            if(contact.name && (!p.name || p.name.trim()==="")) p.name = contact.name;
-            if(contact.raw){ p.notes = [p.notes, "Imported: " + Object.values(contact.raw).slice(0,3).join(" | ")].filter(Boolean).join(" • "); }
-            if(cluster) p._cluster = cluster;
-            merged++;
-            relationRecords.push({sourceId: existingId, relations: contact.relations});
-          } else {
-            const id = String(nextId++);
-            people[id] = { id, name: contact.name, birthYear:"", deathYear:"", gender:"", species:"Human", notes: contact.raw ? ("Imported: "+Object.values(contact.raw).slice(0,3).join(" | ")) : "", phones: contact.phones||[], emails: contact.emails||[], parents:[], children:[] };
-            if(cluster) people[id]._cluster = cluster;
-            created++;
-            relationRecords.push({sourceId: id, relations: contact.relations});
-          }
-        }catch(e){ log("CSV row parse error: "+e.message,"error"); }
-      },
-      complete: function(){
-        if(autoLink){
-          log("Attempting auto-link via Relation fields", "info");
-          relationRecords.forEach(rr => {
-            const relObj = rr.relations || {};
-            Object.keys(relObj).forEach(k => {
-              const val = (relObj[k] || "").toString().trim();
-              if(!val) return;
-              const target = Object.values(people).find(p => (p.name && p.name.toLowerCase() === val.toLowerCase()) || (p.emails && p.emails.some(e=>e.toLowerCase()===val.toLowerCase())));
-              if(target){
-                const source = people[rr.sourceId];
-                const keyLower = k.toLowerCase();
-                if(keyLower.includes("parent") || keyLower.includes("mother") || keyLower.includes("father")){
-                  if(!source.parents.includes(target.id)) source.parents.push(target.id);
-                  if(!target.children.includes(source.id)) target.children.push(source.id);
-                } else if(keyLower.includes("child")){
-                  if(!source.children.includes(target.id)) source.children.push(target.id);
-                  if(!target.parents.includes(source.id)) target.parents.push(source.id);
-                } else {
-                  if(!source.children.includes(target.id)) source.children.push(target.id);
-                  if(!target.children.includes(source.id)) target.children.push(source.id);
-                }
-                source.notes = [source.notes, `Linked:${val}`].filter(Boolean).join(" • ");
-              }
-            });
-          });
-        }
-        saveToStorage();
-        refreshAll();
-        if (window.PBDLocal && typeof window.PBDLocal.onChange === 'function') window.PBDLocal.onChange();
-        setStatus(`Import complete. Rows: ${rowsProcessed}. Created: ${created}. Merged: ${merged}.`);
-        log(`Import complete rows=${rowsProcessed} created=${created} merged=${merged}`,"info");
-        alert(`Import finished: ${rowsProcessed} rows processed. Created ${created}, merged ${merged}.`);
-      },
-      error: function(err){ setStatus("Error parsing CSV"); log("PapaParse error: "+err.message,"error"); }
-    });
-  }
-
-  // Attach event handlers here (ensures scope is correct)
-  document.addEventListener("DOMContentLoaded", function(){
-    previewBtn && previewBtn.addEventListener("click", previewCsv);
-    importBtn && importBtn.addEventListener("click", doImportCsv);
+    c.innerHTML = `<ul class='tree'>${build(rootId)}</ul>`;
   });
-
-  // expose small helpers for debug if needed
-  window._PBD_csv = { previewCsv: previewCsv, doImportCsv: doImportCsv };
-})();
-
-/* Cytoscape visualizer (unchanged ideas but robust wiring) */
+}
+/* =========================================================
+   VISUALIZER
+========================================================= */
 let cyInstance = null;
-function buildCytoscapeElements(){
-  const nodes = []; const edges = []; const clusterColors={}; const palette=["#e6f0ff","#fff7ed","#ecfccb","#fde2f3","#e6fffa","#f0f9ff"]; let colorIdx=0;
-  Object.values(people).forEach(p => {
-    const label = (p.name && p.name.trim()) ? p.name : (p.emails && p.emails[0]) || (p.phones && p.phones[0]) || "(Unnamed)";
-    const cluster = p._cluster || "";
-    if(cluster && !clusterColors[cluster]) clusterColors[cluster] = palette[(colorIdx++) % palette.length];
-    nodes.push({ data: { id:'p'+p.id, label, cluster } });
-    (p.children||[]).forEach(childId => { if(people[childId]) edges.push({ data: { id:`e${p.id}_${childId}`, source:'p'+p.id, target:'p'+childId } }); });
-  });
-  return { nodes, edges, clusterColors };
-}
 
-function renderCytoscape(){
-  const cyEl = document.getElementById('cy');
-  if(!cyEl) return;
-  const obj = buildCytoscapeElements();
-  const elements = obj.nodes.concat(obj.edges);
-  if(cyInstance){ try{ cyInstance.destroy(); }catch(e){} cyInstance = null; }
-  cyInstance = cytoscape({
-    container: cyEl,
-    elements,
-    style: [
-      { selector: 'node', style: { 'label': 'data(label)', 'text-valign': 'center', 'text-wrap': 'wrap', 'width': 'label', 'padding':'6px', 'background-color': '#e6f0ff', 'border-color':'#2563eb', 'border-width':1 } },
-      { selector: 'edge', style: { 'width': 2, 'line-color': '#cfe0ff', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#cfe0ff', 'curve-style': 'bezier' } }
-    ],
-    layout: { name: 'breadthfirst', directed: true, padding: 10, spacingFactor: 1.2 },
-    wheelSensitivity: 0.2
-  });
-  // apply cluster colors
-  Object.values(people).forEach(p=>{
-    if(p._cluster){
-      const node = cyInstance.getElementById('p'+p.id);
-      if(node && node.length){ const c = obj.clusterColors[p._cluster] || "#e6f0ff"; node.style('background-color', c); }
+function toggleVisualizer(){
+  safe(() => {
+    const div = document.getElementById('cy');
+    const tree = document.getElementById('treeContainer');
+
+    if(div.style.display === 'none' || div.style.display === ''){
+      tree.style.display = 'none';
+      div.style.display = 'block';
+      drawCy();
+    } else {
+      div.style.display = 'none';
+      tree.style.display = 'block';
     }
   });
-  cyInstance.on('tap','node', (evt)=>{ const id = evt.target.id().slice(1); const p = people[id]; if(!p) return; alert(`${p.name || '(Unnamed)'}\n${(p.emails && p.emails[0]) || ''}\n${(p.phones && p.phones[0]) || ''}\n${p.notes || ''}`); });
 }
 
-function toggleVisualize(){ const panel = document.getElementById('cyContainer'); const tree = document.getElementById('treeContainer'); if(panel.style.display === 'none' || panel.style.display === ''){ panel.style.display = 'block'; tree.style.display = 'none'; renderCytoscape(); } else { panel.style.display = 'none'; tree.style.display = 'block'; } }
+function drawCy(){
+  safe(() => {
+    const elems = [];
 
-/* About popup */
+    Object.values(people).forEach(p=>{
+      elems.push({ data:{ id:"p"+p.id, label:p.name }});
+      (p.children||[]).forEach(ch=>{
+        elems.push({ data:{ id:"e"+p.id+"_"+ch, source:"p"+p.id, target:"p"+ch }});
+      });
+    });
+
+    cyInstance = cytoscape({
+      container: document.getElementById('cy'),
+      elements: elems,
+      layout: { name:'breadthfirst', directed:true },
+      style: [
+        { selector:'node', style:{ 'background-color':'#88f', 'label':'data(label)' }},
+        { selector:'edge', style:{ 'width':2, 'line-color':'#bbb','target-arrow-color':'#999','target-arrow-shape':'triangle' }}
+      ]
+    });
+  });
+}
+
+/* =========================================================
+   CSV PREVIEW + IMPORT
+========================================================= */
+function previewCSV(){
+  safe(() => {
+    const file = document.getElementById('csvFile').files[0];
+    if(!file){ log("No file"); return; }
+
+    Papa.parse(file, {
+      header:true,
+      preview:20,
+      complete: function(res){
+        log("Preview ok");
+
+        const rows = res.data;
+        const headers = res.meta.fields || [];
+
+        const box = document.getElementById('previewTableBox');
+        const prev = document.getElementById('csvPreview');
+
+        // fill preview
+        let html = "<table border='1' cellpadding='4'><tr>";
+        headers.forEach(h=> html += `<th>${h}</th>`);
+        html += "</tr>";
+
+        rows.forEach(r=>{
+          html += "<tr>";
+          headers.forEach(h => html += `<td>${r[h]||''}</td>`);
+          html += "</tr>";
+        });
+
+        html += "</table>";
+        box.innerHTML = html;
+        prev.style.display = 'block';
+
+        const nc = document.getElementById('nameCol');
+        const ec = document.getElementById('emailCol');
+        const pc = document.getElementById('phoneCol');
+
+        nc.innerHTML = ec.innerHTML = pc.innerHTML = "";
+        headers.forEach(h => {
+          nc.innerHTML += `<option>${h}</option>`;
+          ec.innerHTML += `<option>${h}</option>`;
+          pc.innerHTML += `<option>${h}</option>`;
+        });
+      }
+    });
+  });
+}
+
+function importCSV(){
+  safe(() => {
+    const file = document.getElementById('csvFile').files[0];
+    if(!file){ log("No file"); return; }
+
+    const nameCol = document.getElementById('nameCol').value;
+    const emailCol = document.getElementById('emailCol').value;
+    const phoneCol = document.getElementById('phoneCol').value;
+
+    Papa.parse(file, {
+      header:true,
+      skipEmptyLines:true,
+      complete: function(res){
+        log("Import start: " + res.data.length + " rows");
+
+        res.data.forEach(r=>{
+          const name = r[nameCol] || "";
+          if(!name) return;
+
+          const email = r[emailCol] || "";
+          const phone = r[phoneCol] || "";
+
+          const id = nextId++;
+          people[id] = {
+            id, name,
+            emails: email ? [email] : [],
+            phones: phone ? [phone] : [],
+            children: [],
+            parents: [],
+            notes:""
+          };
+        });
+
+        saveStore();
+        renderSelects();
+        renderTree();
+        log("Import complete.");
+      }
+    });
+  });
+}
+
+/* =========================================================
+   DEMO DATA
+========================================================= */
+function loadDemo(){
+  safe(() => {
+    people = {};
+    nextId = 1;
+
+    const a = nextId++;
+    const b = nextId++;
+    const c = nextId++;
+
+    people[a] = { id:a, name:"Alice", children:[b], parents:[], notes:"", emails:[], phones:[] };
+    people[b] = { id:b, name:"Bob", children:[c], parents:[a], notes:"", emails:[], phones:[] };
+    people[c] = { id:c, name:"Charlie", children:[], parents:[b], notes:"Demo child", emails:[], phones:[] };
+
+    saveStore();
+    renderSelects();
+    renderTree();
+    log("Demo loaded.");
+  });
+}
+
+/* =========================================================
+   FORM HANDLERS
+========================================================= */
+function savePerson(){
+  safe(() => {
+    const idSel = document.getElementById('personSelect').value;
+    let id = idSel || nextId++;
+
+    const name = document.getElementById('nameInput').value.trim();
+    const species = document.getElementById('speciesInput').value;
+    const gender = document.getElementById('genderInput').value;
+    const notes = document.getElementById('notesInput').value;
+
+    if(!name){ log("Name required"); return; }
+
+    people[id] = people[id] || { id, children:[], parents:[], emails:[], phones:[] };
+
+    people[id].name = name;
+    people[id].species = species;
+    people[id].gender = gender;
+    people[id].notes = notes;
+
+    saveStore();
+    renderSelects();
+    renderTree();
+    log("Saved " + name);
+  });
+}
+
+function clearForm(){
+  safe(() => {
+    document.getElementById('personSelect').value = "";
+    document.getElementById('nameInput').value = "";
+    document.getElementById('speciesInput').value = "";
+    document.getElementById('genderInput').value = "";
+    document.getElementById('notesInput').value = "";
+    log("Cleared");
+  });
+}
+
+function deletePerson(){
+  safe(() => {
+    const id = document.getElementById('personSelect').value;
+    if(!id){ log("Nothing selected"); return; }
+
+    delete people[id];
+
+    Object.values(people).forEach(p=>{
+      p.children = p.children.filter(x=>x!=id);
+      p.parents = p.parents.filter(x=>x!=id);
+    });
+
+    saveStore();
+    renderSelects();
+    renderTree();
+    log("Deleted " + id);
+  });
+}
+
+/* =========================================================
+   ADVANCED TOGGLE
+========================================================= */
+function toggleAdvanced(){
+  safe(() => {
+    const div = document.getElementById('advancedFields');
+    div.style.display = (div.style.display === 'none') ? 'block' : 'none';
+  });
+}
+
+/* =========================================================
+   ABOUT
+========================================================= */
 function showAbout(){
-  const w = window.open("", "aboutPBD", "width=720,height=520,scrollbars=yes");
-  if(!w) return alert("Pale Blue Dot — we couldn't open the about window.");
-  w.document.title = "About — Pale Blue Dot";
-  w.document.body.style.fontFamily = "Inter, Arial, sans-serif";
-  w.document.body.style.background = "#fff";
-  w.document.body.innerHTML = `<div style="padding:18px"><h2>Pale Blue Dot</h2>
-    <p>We all live on this small planet called Earth. This app visualizes connections between beings (people & animals) to help you explore your relationships.</p>
-    <figure style="margin:12px 0">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Pale_Blue_Dot.jpg" alt="Pale Blue Dot" style="max-width:100%;border-radius:8px;border:1px solid #eef6ff"/>
-      <figcaption style="font-size:0.9rem;color:#555;margin-top:6px">The original "Pale Blue Dot" image — NASA / Voyager 1</figcaption>
-    </figure>
-    <p style="font-size:0.9rem;color:#444">Ref: <a href="https://en.wikipedia.org/wiki/Pale_Blue_Dot" target="_blank">Pale Blue Dot (Wikipedia)</a></p>
-    <div style="margin-top:10px"><button onclick="window.close()" style="padding:8px 12px;border-radius:8px;border:0;background:#2563eb;color:#fff">Close</button></div>
-  </div>`;
+  safe(() => {
+    alert("Pale Blue Dot — A simple visualization tool.\nAll data stays in your browser.\nInspired by Carl Sagan.");
+  });
 }
 
-/* DOM ready: initialize app wiring */
-document.addEventListener("DOMContentLoaded", function(){
-  try{ appInit(); }catch(e){ console.error("appInit failed", e); log("appInit failed: "+e.message, "error"); }
+/* =========================================================
+   DIAGNOSTICS
+========================================================= */
+function runDiagnostics(){
+  safe(() => {
+    const box = document.getElementById('diagBox');
+    box.style.display = 'block';
+
+    const checks = {
+      csvFile: !!document.getElementById('csvFile'),
+      previewBtn: !!document.getElementById('previewBtn'),
+      importBtn: !!document.getElementById('importBtn'),
+      cyLoaded: !!window.cytoscape,
+      papaLoaded: !!window.Papa,
+      peopleCount: Object.keys(people).length
+    };
+
+    box.textContent = JSON.stringify(checks, null, 2);
+  });
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+document.addEventListener('DOMContentLoaded', ()=>{
+
+  loadStore();
+  renderSelects();
+  renderTree();
+
+  // buttons
+  document.getElementById('saveBtn').onclick = savePerson;
+  document.getElementById('clearBtn').onclick = clearForm;
+  document.getElementById('deleteBtn').onclick = deletePerson;
+
+  document.getElementById('previewBtn').onclick = previewCSV;
+  document.getElementById('importBtn').onclick = importCSV;
+
+  document.getElementById('demoBtn').onclick = loadDemo;
+
+  document.getElementById('aboutBtn').onclick = showAbout;
+
+  document.getElementById('toggleAdv').onclick = toggleAdvanced;
+
+  document.getElementById('visualizeBtn').onclick = toggleVisualizer;
+
+  document.getElementById('diagBtn').onclick = runDiagnostics;
+
+  log("Ready.");
 });
 </script>
+
 </body>
 </html>
