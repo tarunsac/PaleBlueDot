@@ -61,7 +61,7 @@
   </div>
   <div style="text-align:right">
     <div style="font-size:0.8rem;color:#e6eef8">Local-first • No login</div>
-    <div style="font-size:0.75rem;color:#cbd5e1">Export / Import JSON to share</div>
+    <div style="font-size:0.75rem;color:#cbd5e1">Export / Import JSON & CSV to share</div>
   </div>
 </header>
 
@@ -139,6 +139,14 @@
     <label for="jsonArea" style="margin-top:8px">JSON</label>
     <textarea id="jsonArea" placeholder="Exported JSON appears here; paste JSON to import"></textarea>
 
+    <!-- CSV Import (Google Contacts) -->
+    <label style="margin-top:10px">Import Google Contacts (CSV)</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="csvFileInput" type="file" accept=".csv" />
+      <button id="importCsvBtn" class="btn-primary">Import CSV</button>
+      <div id="csvImportStatus" style="font-size:0.9rem;color:#6b7280;margin-left:8px">No file</div>
+    </div>
+
     <!-- PBDLocal UI: autosave / undo / versions -->
     <div id="pbd_local_controls" style="margin-top:12px;">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -190,6 +198,9 @@
 <footer>
   Pale Blue Dot — local-first connection mapper • Export JSON to share with others
 </footer>
+
+<!-- PapaParse CDN (for CSV import) -->
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
 /* Data model: people by id, simple schema extended with species */
@@ -297,7 +308,7 @@ function saveFromForm(){
 
   let id = selectedId || String(nextId++);
   if(!people[id]){
-    people[id] = { id, name, birthYear: birthYear||"", deathYear: deathYear||"", gender: gender||"", species: species||"", notes, parents: [], children: [] };
+    people[id] = { id, name, birthYear: birthYear||"", deathYear: deathYear||"", gender: gender||"", species: species||"", notes, phones: [], emails: [], parents: [], children: [] };
   } else {
     const p = people[id];
     p.name = name; p.birthYear = birthYear||""; p.deathYear = deathYear||"";
@@ -389,7 +400,7 @@ function buildTreeDOM(id, visited = new Set()){
   if(p.children && p.children.length){
     const ul = document.createElement("ul"); ul.className="tree";
     p.children.map(cid=>people[cid]).filter(Boolean).sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(child=>{
-      const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(cnode);
+      const cnode = buildTreeDOM(child.id, new Set(visited)); if(cnode) ul.appendChild(childNode = cnode);
     });
     li.appendChild(ul);
   }
@@ -669,6 +680,158 @@ document.addEventListener("DOMContentLoaded", init);
   };
 })();
 /* End PBDLocal */
+
+/* ===========================
+   CSV Importer (Google Contacts CSV)
+   =========================== */
+(function(){
+  const fileInput = document.getElementById("csvFileInput");
+  const importBtn = document.getElementById("importCsvBtn");
+  const statusEl = document.getElementById("csvImportStatus");
+
+  function setStatus(msg) {
+    if (statusEl) statusEl.textContent = msg;
+  }
+
+  function norm(s) { return (s||"").toString().trim().toLowerCase(); }
+
+  function pickPhonesAndEmails(row) {
+    const phones = [];
+    const emails = [];
+    Object.keys(row).forEach(k=>{
+      const key = k.toLowerCase();
+      const val = (row[k]||"").toString().trim();
+      if (!val) return;
+      if (key.includes("phone") && key.includes("value")) phones.push(val);
+      if (key.includes("e-mail") && key.includes("value")) emails.push(val);
+      if (key.includes("email") || key.includes("e-mail")) {
+        if (val.indexOf("@") !== -1) emails.push(val);
+      }
+    });
+    return { phones: Array.from(new Set(phones)), emails: Array.from(new Set(emails)) };
+  }
+
+  function mapRowToPerson(row) {
+    const name = row["Name"] || row["Full Name"] || row["Display Name"] || ((row["Given Name"]||"") + " " + (row["Family Name"]||""));
+    const org = row["Organization 1 - Name"] || row["Organization"] || "";
+    const notes = row["Notes"] || row["Note"] || "";
+    const { phones, emails } = pickPhonesAndEmails(row);
+    const noteParts = [];
+    if (org) noteParts.push("Org: " + org);
+    if (phones && phones.length) noteParts.push("Phones: " + phones.join(", "));
+    if (emails && emails.length) noteParts.push("Emails: " + emails.join(", "));
+    if (notes) noteParts.push("Notes: " + notes);
+    return {
+      name: name || (emails[0] || phones[0] || "Unnamed"),
+      birthYear: "",
+      deathYear: "",
+      gender: "",
+      species: "Human",
+      notes: noteParts.join(" • "),
+      phones, emails
+    };
+  }
+
+  function createPersonFromContact(contact) {
+    const id = String(nextId++);
+    people[id] = {
+      id,
+      name: contact.name,
+      birthYear: contact.birthYear || "",
+      deathYear: contact.deathYear || "",
+      gender: contact.gender || "",
+      species: contact.species || "Human",
+      notes: contact.notes || "",
+      phones: contact.phones || [],
+      emails: contact.emails || [],
+      parents: [],
+      children: []
+    };
+    return people[id];
+  }
+
+  function importCsvFile(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error("No file provided"));
+      setStatus("Parsing… 0 rows");
+
+      const existingKeys = new Map();
+      Object.values(people).forEach(p => {
+        const key = norm(p.name) + "|" + (norm((p.phones && p.phones[0]) || "") || norm((p.emails && p.emails[0]) || ""));
+        if (!existingKeys.has(key)) existingKeys.set(key, p.id);
+      });
+
+      let rowsProcessed = 0;
+      let created = 0;
+      let merged = 0;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        worker: true,
+        step: function(results, parser) {
+          const row = results.data;
+          rowsProcessed++;
+          if (rowsProcessed % 200 === 0) setStatus(`Parsing… ${rowsProcessed} rows`);
+          try {
+            const contact = mapRowToPerson(row);
+            const key = norm(contact.name) + "|" + (norm(contact.phones[0]||"") || norm(contact.emails[0]||""));
+            if (existingKeys.has(key)) {
+              const pid = existingKeys.get(key);
+              const p = people[pid];
+              (contact.phones || []).forEach(ph => { if (!p.phones) p.phones = []; if (!p.phones.includes(ph)) p.phones.push(ph); });
+              (contact.emails || []).forEach(em => { if (!p.emails) p.emails = []; if (!p.emails.includes(em)) p.emails.push(em); });
+              if (contact.notes && !p.notes.includes(contact.notes)) p.notes = [p.notes, contact.notes].filter(Boolean).join(" • ");
+              merged++;
+            } else {
+              createPersonFromContact(contact);
+              const newPid = String(nextId - 1);
+              existingKeys.set(key, newPid);
+              created++;
+            }
+          } catch (e) {
+            console.warn("CSV row parse error", e);
+          }
+        },
+        complete: function() {
+          saveToStorage();
+          refreshAll();
+          if (window.PBDLocal && typeof window.PBDLocal.onChange === "function") window.PBDLocal.onChange();
+          setStatus(`Done — ${rowsProcessed} rows. Created: ${created}, Merged: ${merged}`);
+          resolve({ rows: rowsProcessed, created, merged });
+        },
+        error: function(err) {
+          setStatus("Error parsing CSV");
+          console.error("PapaParse error", err);
+          reject(err);
+        }
+      });
+    });
+  }
+
+  if (importBtn) {
+    importBtn.addEventListener("click", async () => {
+      const file = fileInput && fileInput.files && fileInput.files[0];
+      if (!file) { alert("Choose a CSV file first (export from Google Contacts as CSV)."); return; }
+      if (file.size > 5 * 1024 * 1024) {
+        if (!confirm("This looks like a large file. Import may take a while. Continue?")) return;
+      }
+      try {
+        setStatus("Starting import…");
+        importBtn.disabled = true;
+        fileInput.disabled = true;
+        const res = await importCsvFile(file);
+        console.log("Import result", res);
+        alert(`Import finished: ${res.rows} rows processed. Created ${res.created}, merged ${res.merged}.`);
+      } catch (e) {
+        alert("Import failed: " + e.message);
+      } finally {
+        importBtn.disabled = false;
+        fileInput.disabled = false;
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>
